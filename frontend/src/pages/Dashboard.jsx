@@ -8,6 +8,7 @@ import { blue, green, orange, red } from '@mui/material/colors';
 import QuranBrowser from '../components/QuranBrowser';
 import HafalanManagement from '../components/HafalanManagement';
 import MurajaahCalendar from '../components/MurajaahCalendar';
+import ProgressCharts from '../components/ProgressCharts';
 import NotificationSystem, { NotificationSettings } from '../components/NotificationSystem';
 
 function Dashboard() {
@@ -46,13 +47,13 @@ function Dashboard() {
     { surah: 'Al-Qalam', target: '1-15', progress: 20 },
     { surah: 'Al-Muzzammil', target: '1-10', progress: 10 }
   ];
-
   // Menu navigasi  
   const menuItems = [
     { id: 'beranda', label: 'Beranda' },
     { id: 'hafalan', label: 'Kelola Hafalan' },
     { id: 'quran', label: 'Baca Al-Qur\'an' },
     { id: 'murajaah', label: 'Muraja\'ah' },
+    { id: 'progress', label: 'Grafik Progres' },
     { id: 'notification', label: 'Notifikasi' }
   ];
 
@@ -120,37 +121,17 @@ function Dashboard() {
       
       {activeMenu === 'beranda' && (
         <>
-          {/* Statistik Ringkasan */}
-          <Box component="section" aria-label="Statistik Hafalan">
-            <Typography component="h2" variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-              Ringkasan Hafalan
-            </Typography>
-            
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+          {/* Statistik Hafalan */}
+          <Box component="section" aria-label="Statistik Hafalan" sx={{ mb: 4 }}>
+            <Grid container spacing={3}>
               {statItems.map((item, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
-                  <Card sx={{ borderRadius: 2 }} component="article">
-                    <CardContent sx={{ 
-                      display: 'flex', 
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      textAlign: 'center'
-                    }}>
-                      <Avatar 
-                        sx={{ 
-                          bgcolor: item.color,
-                          color: 'white',
-                          width: 50,
-                          height: 50,
-                          mb: 2,
-                          fontSize: '1.5rem'
-                        }}
-                        role="img"
-                        aria-label={`${item.value} ${item.title}`}
-                      >
+                <Grid item xs={6} md={3} key={index}>
+                  <Card sx={{ height: '100%', boxShadow: 2, border: `1px solid ${item.color}` }}>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" component="p" sx={{ fontWeight: 'bold', color: item.color }}>
                         {item.value}
-                      </Avatar>
-                      <Typography component="h3" variant="h6" color="text.secondary">
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
                         {item.title}
                       </Typography>
                     </CardContent>
@@ -159,14 +140,138 @@ function Dashboard() {
               ))}
             </Grid>
           </Box>
+          
+          {/* Progress Preview */}
+          <Box component="section" aria-label="Ringkasan Progres Hafalan" sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography component="h2" variant="h6" sx={{ fontWeight: 'bold' }}>
+                Ringkasan Progres Hafalan
+              </Typography>
+              <Button 
+                color="primary" 
+                variant="text" 
+                onClick={() => setActiveMenu('progress')}
+                sx={{ fontSize: '0.875rem' }}
+              >
+                Lihat Detail
+              </Button>
+            </Box>
+            
+            <Paper sx={{ p: 3, borderRadius: 2, mb: 4 }}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={8}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Progres hafalan 6 bulan terakhir
+                  </Typography>
+                  <Box sx={{ height: 200, position: 'relative' }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      height: '180px', 
+                      alignItems: 'flex-end',
+                      justifyContent: 'space-around',
+                      position: 'relative',
+                      px: 2
+                    }}>
+                      {/* Progress Bar Chart Preview */}
+                      {['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'].map((month, idx) => {
+                        const values = [5, 8, 12, 15, 20, 25];
+                        return (
+                          <Box 
+                            key={idx} 
+                            sx={{ 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              alignItems: 'center',
+                              width: '14%' 
+                            }}
+                          >
+                            <Box 
+                              sx={{ 
+                                height: `${values[idx] * 6}px`, 
+                                width: '100%',
+                                bgcolor: blue[idx % 2 ? 300 : 500],
+                                borderRadius: '3px 3px 0 0'
+                              }} 
+                            />
+                            <Typography 
+                              variant="caption" 
+                              color="text.secondary" 
+                              sx={{ mt: 1 }}
+                            >
+                              {month}
+                            </Typography>
+                          </Box>
+                        );
+                      })}
+                      
+                      {/* Y-axis labels */}
+                      <Box sx={{ 
+                        position: 'absolute', 
+                        left: 0, 
+                        top: 0, 
+                        height: '100%', 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        pr: 1
+                      }}>
+                        <Typography variant="caption" color="text.secondary">25</Typography>
+                        <Typography variant="caption" color="text.secondary">12</Typography>
+                        <Typography variant="caption" color="text.secondary">0</Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Kualitas hafalan Anda
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 1
+                  }}>
+                    {[
+                      { label: 'Excellent', value: 30, color: green[500] },
+                      { label: 'Good', value: 50, color: blue[500] },
+                      { label: 'Average', value: 20, color: orange[400] },
+                      { label: 'Poor', value: 0, color: red[400] }
+                    ].map((quality, idx) => (
+                      <Box key={idx} sx={{ width: '45%', mb: 2 }}>
+                        <Typography variant="body2" gutterBottom>
+                          {quality.label}
+                        </Typography>
+                        <Box sx={{ 
+                          width: '100%', 
+                          height: 8, 
+                          bgcolor: 'grey.200', 
+                          borderRadius: 5,
+                          overflow: 'hidden'
+                        }}>
+                          <Box sx={{ 
+                            width: `${quality.value}%`, 
+                            height: '100%', 
+                            bgcolor: quality.color 
+                          }} />
+                        </Box>
+                        <Typography variant="caption" color="text.secondary">
+                          {quality.value}%
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Box>
 
           {/* Target Hafalan */}
           <Box component="section" aria-label="Target Hafalan">
-            <Typography component="h2" variant="h6" sx={{ mb: 2, mt: 4, fontWeight: 'bold' }}>
-              Target Hafalan
+            <Typography component="h2" variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+              Target Hafalan Saat Ini
             </Typography>
-
-            <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+            
+            <Paper sx={{ p: 3, borderRadius: 2, mb: 4 }}>
               {hafalanTargets.map((target, index) => (
                 <Box component="article" key={index} sx={{ mb: 2, pb: 2, borderBottom: index !== hafalanTargets.length - 1 ? '1px solid #eee' : 'none' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -254,10 +359,12 @@ function Dashboard() {
         <HafalanManagement recentActivities={recentActivities} />
       )}      {activeMenu === 'quran' && (
         <QuranBrowser />
-      )}
-
-      {activeMenu === 'murajaah' && (
+      )}      {activeMenu === 'murajaah' && (
         <MurajaahCalendar />
+      )}
+      
+      {activeMenu === 'progress' && (
+        <ProgressCharts />
       )}
 
       {activeMenu === 'notification' && (
