@@ -1,12 +1,63 @@
-# React + Vite
+# Hafidz Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive web application to help Muslims track, manage, and improve their Quran memorization (Hafalan).
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Dashboard**: Get a quick overview of your memorization progress and recent activities
+- **Quran Browser**: Read the Quran with Arabic text and Indonesian translation
+- **Hafalan Management**: Track your memorization progress by surah and verse
+- **Reminder System**: Set reminders for regular review of previously memorized verses
 
-## Expanding the ESLint configuration
+## Technology Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- React 19
+- Material UI 7
+- Vite
+- React Router
+- Axios for API calls
+
+## Installation
+
+1. Clone the repository
+   ```bash
+   git clone [repository-url]
+   ```
+
+2. Navigate to the frontend directory
+   ```bash
+   cd uas-pemrograman-web-122140122/frontend
+   ```
+
+3. Install dependencies
+   ```bash
+   npm install
+   ```
+
+4. Run the development server
+   ```bash
+   npm run dev
+   ```
+
+## Quran API
+
+This application uses the Quran.com API for Arabic text and translations. The API is used for:
+- Getting the list of surahs
+- Retrieving verse text and translations
+- Searching the Quran
+
+## Hafalan Management
+
+The Hafalan management system allows you to:
+- Add new memorization entries
+- Track quality of memorization (excellent, good, average, poor)
+- View progress by surah
+- Manage your memorization schedule
+
+## Contributing
+
+This project is part of a university assignment. Contributions are welcome after the assignment is completed.
+
+## License
+
+[MIT](LICENSE)
