@@ -1,12 +1,14 @@
 import { useAuth } from '../context/AuthContext';
 import { 
   Typography, Box, Button, Container, Paper, Grid, Card, CardContent, 
-  Avatar, Divider, List, ListItem, ListItemText
+  Avatar, Divider, List, ListItem, ListItemText, Tab, Tabs
 } from '@mui/material';
 import { useState } from 'react';
 import { blue, green, orange, red } from '@mui/material/colors';
 import QuranBrowser from '../components/QuranBrowser';
 import HafalanManagement from '../components/HafalanManagement';
+import MurajaahCalendar from '../components/MurajaahCalendar';
+import NotificationSystem, { NotificationSettings } from '../components/NotificationSystem';
 
 function Dashboard() {
   const { currentUser, logout } = useAuth();
@@ -45,30 +47,33 @@ function Dashboard() {
     { surah: 'Al-Muzzammil', target: '1-10', progress: 10 }
   ];
 
-  // Menu navigasi
+  // Menu navigasi  
   const menuItems = [
     { id: 'beranda', label: 'Beranda' },
     { id: 'hafalan', label: 'Kelola Hafalan' },
     { id: 'quran', label: 'Baca Al-Qur\'an' },
-    { id: 'reminder', label: 'Reminder' }
+    { id: 'murajaah', label: 'Muraja\'ah' },
+    { id: 'notification', label: 'Notifikasi' }
   ];
 
   return (
     <Container component="main" maxWidth="lg" sx={{ py: 4 }}>
       {/* Header Aplikasi */}
-      <Box component="header" sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box component="header" sx={{ mb: 4 }}>        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Typography component="h1" variant="h4" fontWeight="bold">
             Hafidz Tracker
           </Typography>
-          <Button 
-            variant="outlined" 
-            color="error" 
-            onClick={handleLogout}
-            aria-label="Keluar dari aplikasi"
-          >
-            Keluar
-          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <NotificationSystem />
+            <Button 
+              variant="outlined" 
+              color="error" 
+              onClick={handleLogout}
+              aria-label="Keluar dari aplikasi"
+            >
+              Keluar
+            </Button>
+          </Box>
         </Box>
 
         {/* Menu Navigasi Sederhana */}
@@ -247,48 +252,17 @@ function Dashboard() {
 
       {activeMenu === 'hafalan' && (
         <HafalanManagement recentActivities={recentActivities} />
-      )}
-
-      {activeMenu === 'quran' && (
+      )}      {activeMenu === 'quran' && (
         <QuranBrowser />
       )}
 
-      {activeMenu === 'reminder' && (
-        <Box component="section" aria-label="Reminder Muroja'ah">
-          <Typography component="h2" variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
-            Reminder Muroja'ah
-          </Typography>
+      {activeMenu === 'murajaah' && (
+        <MurajaahCalendar />
+      )}
 
-          <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button variant="contained" color="primary">
-                Tambah Reminder
-              </Button>
-            </Box>
-            
-            <List>
-              {[
-                { surah: 'Al-Baqarah', ayat: '1-20', jadwal: 'Setiap Senin, 05:00' },
-                { surah: 'Yasin', ayat: '1-83', jadwal: 'Setiap Jumat, 18:30' },
-                { surah: 'Ar-Rahman', ayat: '1-78', jadwal: 'Setiap Rabu, 20:00' }
-              ].map((reminder, index, arr) => (                <Box key={index}>
-                  <ListItem>
-                    <ListItemText
-                      primary={`${reminder.surah} (Ayat ${reminder.ayat})`}
-                      secondary={reminder.jadwal}
-                    />
-                    <Button size="small" color="primary" style={{ marginRight: '8px' }}>
-                      Edit
-                    </Button>
-                    <Button size="small" color="error">
-                      Hapus
-                    </Button>
-                  </ListItem>
-                  {index < arr.length - 1 && <Divider />}
-                </Box>
-              ))}
-            </List>
-          </Paper>
+      {activeMenu === 'notification' && (
+        <Box component="section" aria-label="Pengaturan Notifikasi">
+          <NotificationSettings />
         </Box>
       )}
     </Container>
