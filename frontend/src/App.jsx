@@ -1,58 +1,37 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './context/AuthContext'
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
-import './App.css'
-
-// Pages
-import Login from './pages/Login'
-import Register from './pages/Register'
-import Dashboard from './pages/Dashboard'
-import ProtectedRoute from './components/ProtectedRoute'
-
-// Tema kustom
-const theme = createTheme({
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-  },
-  palette: {
-    primary: {
-      main: '#1976d2',
-    }
-  },
-  shape: {
-    borderRadius: 8
-  }
-})
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout'; // Import the Layout component
+import Dashboard from './pages/Dashboard';
+import Quran from './pages/Quran';
+import Reminder from './pages/Reminder';
+import Chart from './pages/Chart';
+import Login from './pages/Login';
+import HafalanForm from './components/HafalanForm'; // Assuming this will be a shared component
+// import useAuthStore from './hooks/useAuth'; // To check auth status on load if needed
 
 function App() {
-  const { currentUser } = useAuth()
+  // const checkAuth = useAuthStore(state => state.checkAuth); // Example if you add checkAuth
+  // useEffect(() => {
+  //  checkAuth(); // Check auth status when app loads
+  // }, [checkAuth]);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Routes>
-        {/* Rute publik */}
-        <Route path="/login" element={
-          currentUser ? <Navigate to="/dashboard" /> : <Login />
-        } />
-        <Route path="/register" element={
-          currentUser ? <Navigate to="/dashboard" /> : <Register />
-        } />
-        
-        {/* Rute terproteksi */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } />
-        
-        {/* Rute default */}
-        <Route path="/" element={
-          currentUser ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
-        } />
-      </Routes>
-    </ThemeProvider>
-  )
+    <Router>
+      <Layout> {/* Wrap all routes with the Layout component */}
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/quran" element={<Quran />} />
+          <Route path="/reminder" element={<Reminder />} />
+          <Route path="/chart" element={<Chart />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/hafalan/new" element={<HafalanForm />} />
+          <Route path="/hafalan/edit/:id" element={<HafalanForm />} />
+          {/* Add a 404 Not Found page if desired */}
+          {/* <Route path="*" element={<NotFoundPage />} /> */}
+        </Routes>
+      </Layout>
+    </Router>
+  );
 }
 
-export default App
+export default App;
