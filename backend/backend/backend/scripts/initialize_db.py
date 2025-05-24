@@ -3,28 +3,19 @@ import sys
 
 from pyramid.paster import bootstrap, setup_logging
 from sqlalchemy.exc import OperationalError
-from sqlalchemy import engine_from_config  # Added to get engine directly
 
-# Import Base from your models' metadata
-from ..models.meta import Base
-# Import your models if you plan to add seed data
-# from ..models.mymodel import User, Surah # etc.
+from ..models.meta import Base  # Import Base
+from .. import models  # Ensure models are loaded
 
 
-def setup_models(dbsession, engine):  # Added engine parameter
+def setup_models(dbsession):
     """
-    Create all tables in the database.
-    Optionally, add fixtures / seed data here.
+    Create database tables based on SQLAlchemy models.
+
     """
-    # Create all tables
+    engine = dbsession.get_bind()
     Base.metadata.create_all(engine)
-    print("Database tables created (if they didn't exist).")
-
-    # Example of adding seed data (optional):
-    # if not dbsession.query(User).filter_by(email=\'\'\'admin@example.com\'\'\').first():
-    #     admin_user = User(email=\'\'\'admin@example.com\'\'\', password_hash=\'\'\'some_hashed_password\'\'\') # Remember to hash passwords properly
-    #     dbsession.add(admin_user)
-    #     print("Added seed admin user.")
+    print("Database tables created successfully based on models.")
 
 
 def parse_args(argv):
@@ -41,15 +32,10 @@ def main(argv=sys.argv):
     setup_logging(args.config_uri)
     env = bootstrap(args.config_uri)
 
-    # Get the SQLAlchemy engine from the settings
-    settings = env['registry'].settings
-    engine = engine_from_config(settings, 'sqlalchemy.')
-
     try:
         with env['request'].tm:
             dbsession = env['request'].dbsession
-            # Pass both dbsession and engine to setup_models
-            setup_models(dbsession, engine)
+            setup_models(dbsession)
     except OperationalError:
         print('''
 Pyramid is having a problem using your SQL database.  The problem

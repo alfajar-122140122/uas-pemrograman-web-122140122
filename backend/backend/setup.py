@@ -20,7 +20,6 @@ requires = [
     'SQLAlchemy',
     'transaction',
     'zope.sqlalchemy',
-    'psycopg2-binary',  # Added PostgreSQL driver
 ]
 
 tests_require = [
