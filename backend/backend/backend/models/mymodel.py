@@ -1,121 +1,151 @@
+from passlib.context import CryptContext # For password hashing
+import enum
 from sqlalchemy import (
     Column,
-    DateTime,
-    Enum,  # For status in Hafalan
-    ForeignKey,
     Integer,
-    Boolean,
     String,
     Text,
+    ForeignKey,
+    TIMESTAMP,
+    Boolean,
+    Enum as SQLEnum, # Alias to avoid conflict with Python's enum
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func  # For server_default=func.now()
-import enum
-
+from sqlalchemy.sql import func # For server_default=func.now()
 from .meta import Base
 
+# Setup passlib
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=True)  # From Login.jsx (registration), assuming it can be optional or handled
-    email = Column(String(120), unique=True, nullable=False, index=True)  # From Login.jsx
-    password_hash = Column(String(255), nullable=False)  # To store hashed passwords
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(100), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
-    # Relationships
-    hafalan_records = relationship("Hafalan", back_populates="user", cascade="all, delete-orphan")
+    hafalan = relationship("Hafalan", back_populates="user", cascade="all, delete-orphan")
     reminders = relationship("Reminder", back_populates="user", cascade="all, delete-orphan")
 
-    def __repr__(self):
-        return f'<User {self.email}>'
+    def set_password(self, password):
+        self.password_hash = pwd_context.hash(password)
 
+    def check_password(self, password):
+        return pwd_context.verify(password, self.password_hash)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
 
 class Surah(Base):
     __tablename__ = 'surahs'
-    id = Column(Integer, primary_key=True, index=True)  # Internal ID
-    surah_number = Column(Integer, unique=True, nullable=False)  # From Quran.jsx (api.alquran.cloud/v1/surah)
-    name_arabic = Column(String(100), nullable=False)  # From Quran.jsx (api.alquran.cloud) - e.g., الفاتحة
-    name_english = Column(String(100), nullable=False)  # From Quran.jsx (api.alquran.cloud) - e.g., Al-Fatiha
-    english_translation = Column(String(100))  # From Quran.jsx (api.alquran.cloud) - e.g., The Opening
-    number_of_ayahs = Column(Integer, nullable=False)  # From Quran.jsx (api.alquran.cloud)
-    revelation_type = Column(String(20))  # From Quran.jsx (api.alquran.cloud) - E.g., \'Meccan\', \'Medinan\'
+    id = Column(Integer, primary_key=True, index=True)
+    surah_number = Column(Integer, unique=True, nullable=False, index=True)
+    name_arabic = Column(String(100), nullable=False)
+    name_english = Column(String(100), nullable=False)
+    english_translation = Column(String(100))
+    number_of_ayahs = Column(Integer, nullable=False)
+    revelation_type = Column(String(20)) # Mecca or Medina
 
-    # Relationship
     ayahs = relationship("Ayah", back_populates="surah", cascade="all, delete-orphan")
 
-    def __repr__(self):
-        return f'<Surah {self.surah_number}: {self.name_english}>'
-
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "surah_number": self.surah_number,
+            "name_arabic": self.name_arabic,
+            "name_english": self.name_english,
+            "english_translation": self.english_translation,
+            "number_of_ayahs": self.number_of_ayahs,
+            "revelation_type": self.revelation_type
+        }
 
 class Ayah(Base):
     __tablename__ = 'ayahs'
-    id = Column(Integer, primary_key=True, index=True)  # Internal ID
-    surah_id = Column(Integer, ForeignKey('surahs.id'), nullable=False)
-    ayah_number_in_surah = Column(Integer, nullable=False)  # From Quran.jsx (api.alquran.cloud)
-    text_uthmani = Column(Text, nullable=False)  # From Quran.jsx (api.alquran.cloud - quran-uthmani)
-    translation_id = Column(Text)  # From Quran.jsx (api.alquran.cloud - id.indonesian)
-    translation_en = Column(Text)  # From Quran.jsx (api.alquran.cloud - en.sahih)
-    # audio_url = Column(String(255)) # Optional: if you plan to store audio links
+    id = Column(Integer, primary_key=True, index=True)
+    surah_id = Column(Integer, ForeignKey('surahs.id', ondelete="CASCADE"), nullable=False, index=True)
+    ayah_number_in_surah = Column(Integer, nullable=False)
+    text_uthmani = Column(Text, nullable=False)
+    translation_id = Column(Text) # Indonesian translation
+    translation_en = Column(Text) # English translation
 
-    # Relationships
     surah = relationship("Surah", back_populates="ayahs")
-    hafalan_records = relationship("Hafalan", back_populates="ayah", cascade="all, delete-orphan")  # If linking Hafalan to specific Ayah
-
-    def __repr__(self):
-        return f'<Ayah Surah {self.surah_id}:{self.ayah_number_in_surah}>'
+    hafalan_entries = relationship("Hafalan", back_populates="ayah", foreign_keys='[Hafalan.ayah_id]')
 
 
-# Enum for Hafalan status
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "surah_id": self.surah_id,
+            "ayah_number_in_surah": self.ayah_number_in_surah,
+            "text_uthmani": self.text_uthmani,
+            "translation_id": self.translation_id,
+            "translation_en": self.translation_en
+        }
+
 class HafalanStatusEnum(enum.Enum):
     belum = "belum"
-    dihafal = "dihafal"
-    dilupa = "dilupa"
-
+    sedang = "sedang"
+    selesai = "selesai"
 
 class Hafalan(Base):
-    __tablename__ = 'hafalan'  # Matches HafalanForm.jsx
+    __tablename__ = 'hafalan'
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    surah_name = Column(String(100)) # Can be denormalized or linked to Surah model
+    ayah_range = Column(String(50)) # e.g., "1-10" or "5"
+    status = Column(SQLEnum(HafalanStatusEnum), default=HafalanStatusEnum.belum, nullable=False)
+    catatan = Column(Text)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    last_reviewed_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    
+    # Optional: Link directly to an Ayah if memorization is per specific ayah
+    ayah_id = Column(Integer, ForeignKey('ayahs.id', ondelete="SET NULL"), nullable=True)
 
-    # Option 1: Store surah name and ayah range as text (as in HafalanForm.jsx)
-    surah_name = Column(String(100), nullable=False)  # From HafalanForm.jsx (state \'surat\')
-    ayah_range = Column(String(50), nullable=False)  # From HafalanForm.jsx (state \'ayat\')
 
-    # Option 2: Link to a specific Ayah (if granularity is per-ayah)
-    # This might be more complex if hafalan is for a range of ayahs.
-    # If choosing this, ensure Ayah model has hafalan_records relationship correctly defined.
-    ayah_id = Column(Integer, ForeignKey('ayahs.id'), nullable=True)  # Link to a specific starting ayah if needed
+    user = relationship("User", back_populates="hafalan")
+    ayah = relationship("Ayah", back_populates="hafalan_entries", foreign_keys=[ayah_id])
 
-    status = Column(Enum(HafalanStatusEnum), default=HafalanStatusEnum.belum, nullable=False)  # From HafalanForm.jsx (state \'status\')
-    catatan = Column(Text, nullable=True)  # From HafalanForm.jsx (state \'catatan\')
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    last_reviewed_at = Column(DateTime(timezone=True), nullable=True)  # Optional: for tracking reviews
-
-    # Relationships
-    user = relationship("User", back_populates="hafalan_records")
-    ayah = relationship("Ayah", back_populates="hafalan_records")  # If using ayah_id
-
-    def __repr__(self):
-        return f'<Hafalan User {self.user_id} - {self.surah_name}:{self.ayah_range} [{self.status.value if self.status else ""}]>'
-
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "surah_name": self.surah_name,
+            "ayah_range": self.ayah_range,
+            "status": self.status.value if self.status else None,
+            "catatan": self.catatan,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "last_reviewed_at": self.last_reviewed_at.isoformat() if self.last_reviewed_at else None,
+            "ayah_id": self.ayah_id
+        }
 
 class Reminder(Base):
-    __tablename__ = 'reminders'  # Matches Reminder.jsx
+    __tablename__ = 'reminders'
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    surat = Column(String(100), nullable=False)  # From Reminder.jsx (state \'surat\')
-    ayat = Column(String(50), nullable=False)  # From Reminder.jsx (state \'ayat\') - can be a range
-    due_date = Column(DateTime(timezone=True), nullable=False)  # From Reminder.jsx (state \'tanggal\')
+    user_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    surat = Column(String(100), nullable=False) # Surah name or number
+    ayat = Column(String(50), nullable=False) # Ayah range or number
+    due_date = Column(TIMESTAMP(timezone=True), nullable=False, index=True)
     is_completed = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    # notification_sent = Column(Boolean, default=False) # Optional: if tracking push notifications
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
-    # Relationship
     user = relationship("User", back_populates="reminders")
 
-    def __repr__(self):
-        return f'<Reminder User {self.user_id} - {self.surat} {self.ayat} on {self.due_date}>'
-    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "surat": self.surat,
+            "ayat": self.ayat,
+            "due_date": self.due_date.isoformat() if self.due_date else None,
+            "is_completed": self.is_completed,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
