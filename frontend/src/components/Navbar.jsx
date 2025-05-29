@@ -3,10 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../hooks/useAuth';
 
 // Placeholder icons (replace with actual icons later)
-const SearchIcon = () => <span className="text-text-secondary group-hover:text-accent-primary">🔍</span>;
-const BellIcon = () => <span className="text-text-secondary group-hover:text-accent-primary">🔔</span>;
-const UserCircleIcon = () => <span className="text-text-secondary group-hover:text-accent-primary">👤</span>;
-const MenuIcon = () => <span className="text-text-secondary group-hover:text-accent-primary">☰</span>;
+const SearchIcon = () => <span className="text-text-secondary group-hover:text-accent-primary"></span>; // Removed "Search" text
+const BellIcon = () => <span className="text-text-secondary group-hover:text-accent-primary"></span>;
+const UserCircleIcon = () => <span className="text-text-secondary group-hover:text-accent-primary">👤</span>; // Added user icon
+const MenuIcon = () => <span className="text-text-secondary group-hover:text-accent-primary">Menu</span>;
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuthStore();

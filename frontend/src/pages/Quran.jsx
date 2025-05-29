@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Snackbar, Alert, CircularProgress } from '@mui/material';
+import { Snackbar, Alert, CircularProgress, TextField, InputAdornment } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import quranService from '../services/quranService';
+import SurahCard from '../components/SurahCard';
 
 const Quran = () => {
   const navigate = useNavigate();
@@ -9,6 +11,7 @@ const Quran = () => {
   const [selectedSurah, setSelectedSurah] = useState(null);
   const [verses, setVerses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [notification, setNotification] = useState({
     open: false,
     message: '',
@@ -44,6 +47,8 @@ const Quran = () => {
     setLoading(true);
     
     try {
+      // Scroll to top when a surah is selected
+      window.scrollTo(0, 0);
       const result = await quranService.getSurahWithAyahs(surahNumber);
       setVerses(result.ayahs);
       setLoading(false);
@@ -71,51 +76,97 @@ const Quran = () => {
     setNotification({...notification, open: false});
   };
 
+  // Filter surahs based on search term
+  const filteredSurahs = surahs.filter(surah => 
+    surah.englishName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    surah.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    surah.number.toString().includes(searchTerm)
+  );
+
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Baca Al-Qur'an</h1>
-      <div className="mb-6">
-        <select
-          onChange={(e) => handleSurahChange(e.target.value)}
-          className="block w-full md:w-1/2 mx-auto p-3 border border-gray-300 bg-white rounded-2xl shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-          defaultValue=""
-          disabled={loading}
-        >
-          <option value="" disabled>Pilih Surat</option>
-          {surahs.map(surah => (
-            <option key={surah.number} value={surah.number}>
-              {surah.number}. {surah.englishName} ({surah.name})
-            </option>
-          ))}
-        </select>
+      <h1 className="text-3xl font-bold text-text-primary mb-6 text-center">Baca Al-Qur'an</h1>
+      
+      {/* Search Bar */} 
+      <div className="mb-8 px-2 sm:px-0">
+        <TextField 
+          fullWidth
+          variant="outlined"
+          placeholder="Cari Surat (nama, nomor, atau nama Arab)..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            sx: {
+              borderRadius: '12px', // Rounded corners
+              backgroundColor: 'white', // White background
+            }
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: 'var(--border-color)', // Use theme border color
+              },
+              '&:hover fieldset': {
+                borderColor: 'var(--accent-primary)', // Use theme accent color on hover
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: 'var(--accent-primary)', // Use theme accent color when focused
+              },
+            },
+          }}
+        />
       </div>
 
-      {loading && (
-        <div className="flex justify-center my-12">
-          <CircularProgress color="success" />
+      {/* Surah Cards Grid - Display if no surah is selected */} 
+      {!selectedSurah && !loading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+          {filteredSurahs.map(surah => (
+            <SurahCard key={surah.number} surah={surah} onClick={handleSurahChange} />
+          ))}
         </div>
       )}
 
-      {selectedSurah && !loading && (
+      {/* Loading indicator for surah list or verses */}
+      {loading && (
+        <div className="flex justify-center my-12">
+          <CircularProgress sx={{ color: 'var(--accent-primary)' }} />
+        </div>
+      )}
+
+      {/* Selected Surah Verses - Display if a surah is selected and not loading */} 
+      {selectedSurah && !loading && verses.length > 0 && (
         <div className="mt-6">
-          <h2 className="text-2xl font-semibold text-green-600 mb-4 text-center">
-            {surahs.find(s => s.number === parseInt(selectedSurah))?.englishName}
-            {' ('}
-            {surahs.find(s => s.number === parseInt(selectedSurah))?.name}
-            {')'}
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold text-accent-primary-dark">
+              {surahs.find(s => s.number === parseInt(selectedSurah))?.englishName}
+              {' ('}
+              {surahs.find(s => s.number === parseInt(selectedSurah))?.name}
+              {')'}
+            </h2>
+            <button 
+              onClick={() => handleSurahChange(null)} // Clear selection
+              className="bg-bg-secondary hover:bg-border-color text-text-secondary font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors duration-150"
+            >
+              &larr; Kembali ke Daftar Surat
+            </button>
+          </div>
           
           <div className="space-y-4">
             {verses.map(verse => (
-              <div key={verse.numberInSurah} className="bg-white shadow-lg rounded-2xl p-6">
-                <p className="text-right text-2xl font-arabic leading-relaxed mb-3" style={{ fontFamily: "'Traditional Arabic', serif" }}>
-                  {verse.text} <span className="text-green-600">({verse.numberInSurah})</span>
+              <div key={verse.numberInSurah} className="bg-white shadow-lg rounded-2xl p-6 border border-border-color">
+                <p className="text-right text-3xl font-arabic leading-loose mb-4 text-text-primary" style={{ fontFamily: "'Noto Naskh Arabic', serif" }}>
+                  {verse.text} <span className="text-accent-primary-dark text-xl">({verse.numberInSurah})</span>
                 </p>
-                <p className="text-gray-700 mb-1">{verse.translation.id}</p>
-                <p className="text-sm text-gray-500 italic mb-3">{verse.translation.en}</p>
+                <p className="text-text-primary mb-2 text-base leading-relaxed">{verse.translation.id}</p>
+                <p className="text-sm text-text-secondary italic mb-4">{verse.translation.en}</p>
                 <button
                   onClick={() => handleAddToHafalan(verse)}
-                  className="mt-3 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-2xl shadow focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className="mt-3 bg-accent-primary hover:bg-accent-primary-dark text-white font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-150 focus:outline-none focus:ring-2 ring-offset-2 ring-accent-primary"
                 >
                   Tambahkan ke Hafalan
                 </button>
@@ -125,6 +176,7 @@ const Quran = () => {
         </div>
       )}
       
+      {/* Notification Snackbar */}
       <Snackbar 
         open={notification.open} 
         autoHideDuration={6000} 

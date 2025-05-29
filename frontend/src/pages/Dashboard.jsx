@@ -92,6 +92,20 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto p-4">
+      {/* Poster Section - Full Width at the top */}
+      {currentQuote && (
+        <section className="bg-gradient-to-br from-accent-primary to-green-400 shadow-lg rounded-2xl p-8 text-white border border-border-color flex flex-col items-center text-center mb-8">
+          <h2 className="text-3xl font-bold mb-4">Kutipan Hari Ini</h2>
+          <blockquote className="italic text-lg mb-4">
+            <p>"{currentQuote.text}"</p>
+            <footer className="mt-3 text-sm text-green-100">
+              - QS. {currentQuote.surah}: {currentQuote.ayat}
+            </footer>
+          </blockquote>
+          {/* Optional: Add a share button or a refresh button for a new quote */}
+        </section>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-1 space-y-6">
           <section className="bg-bg-secondary shadow-lg rounded-2xl p-6 border border-border-color">
@@ -118,18 +132,6 @@ const Dashboard = () => {
               Lihat Semua Jadwal &rarr;
             </Link>
           </section>
-
-          {currentQuote && (
-            <section className="bg-bg-secondary shadow-lg rounded-2xl p-6 border border-border-color">
-              <h2 className="text-2xl font-semibold text-text-primary mb-3">Kutipan Hari Ini</h2>
-              <blockquote className="italic text-text-secondary">
-                <p>"{currentQuote.text}"</p>
-                <footer className="mt-2 text-sm text-accent-primary">
-                  - QS. {currentQuote.surah}: {currentQuote.ayat}
-                </footer>
-              </blockquote>
-            </section>
-          )}
         </div>
 
         <div className="lg:col-span-2">

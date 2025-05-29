@@ -3,11 +3,11 @@ import { Link, useLocation } from 'react-router-dom';
 import Navbar from './Navbar'; // This is the top bar
 
 // Placeholder icons for sidebar - replace with actual icons
-const HomeIcon = () => <span className="group-hover:text-accent-primary">🏠</span>;
-const BookOpenIcon = () => <span className="group-hover:text-accent-primary">📖</span>;
-const CalendarIcon = () => <span className="group-hover:text-accent-primary">📅</span>;
-const ChartBarIcon = () => <span className="group-hover:text-accent-primary">📊</span>;
-const CogIcon = () => <span className="group-hover:text-accent-primary">⚙️</span>; // Example for a settings link
+const HomeIcon = () => <span className="group-hover:text-accent-primary"></span>;
+const BookOpenIcon = () => <span className="group-hover:text-accent-primary"></span>;
+const CalendarIcon = () => <span className="group-hover:text-accent-primary"></span>;
+const ChartBarIcon = () => <span className="group-hover:text-accent-primary"></span>;
+const CogIcon = () => <span className="group-hover:text-accent-primary"></span>; // Example for a settings link
 
 const navLinks = [
   { href: '/', label: 'Dashboard', icon: HomeIcon },
