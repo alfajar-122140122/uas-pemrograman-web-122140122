@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-// import api from '../services/api'; // Assuming api.js is set up
-// import useAuthStore from '../store/useStore'; // Assuming a zustand store
+import api from '../services/api';
+import useAuthStore from '../hooks/useAuth';
 
 // Placeholder for quotes - in a real app, this might come from an API or a larger local collection
 const quranQuotes = [
@@ -15,47 +15,80 @@ const Dashboard = () => {
   const [hafalanList, setHafalanList] = useState([]);
   const [upcomingReminders, setUpcomingReminders] = useState([]);
   const [currentQuote, setCurrentQuote] = useState(null);
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [isReminderLoading, setIsReminderLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const { user, isAuthenticated } = useAuthStore();
+  
   useEffect(() => {
-    // Fetch hafalan data from backend
-    // api.get('/hafalan')
-    //   .then(response => setHafalanList(response.data))
-    //   .catch(error => console.error("Error fetching hafalan list:", error));
-    console.log("Fetching hafalan list for dashboard..."); // Placeholder
-    setHafalanList([
-      { id: 1, surat: 'Al-Fatihah', ayat: '1-7', status: 'dihafal', catatan: 'Review setiap hari' },
-      { id: 2, surat: 'Al-Baqarah', ayat: '1-5', status: 'belum', catatan: 'Mulai pekan ini' },
-      { id: 3, surat: 'An-Nas', ayat: '1-6', status: 'dilupa', catatan: 'Perlu diulang lagi' },
-    ]);
-
-    // Fetch upcoming reminders (e.g., next 3)
-    // api.get('/reminders?limit=3&status=upcoming') // Example API call
-    //   .then(response => setUpcomingReminders(response.data))
-    //   .catch(error => console.error("Error fetching reminders:", error));
-    console.log("Fetching upcoming reminders..."); // Placeholder
-    setUpcomingReminders([
-      { id: 1, surat: 'Al-Mulk', ayat: '1-30', tanggal: '2025-05-24' },
-      { id: 2, surat: 'Yasin', ayat: '1-83', tanggal: '2025-05-25' },
-    ]);
-
-    // Set a random quote
+    // Set a random quote regardless of loading state
     setCurrentQuote(quranQuotes[Math.floor(Math.random() * quranQuotes.length)]);
-  }, []);
-
-  const handleDelete = async (id) => {
-    // if (window.confirm("Yakin ingin menghapus hafalan ini?")) {
-    //   try {
-    //     await api.delete(`/hafalan/${id}`);
-    //     setHafalanList(hafalanList.filter(item => item.id !== id));
-    //     // Show success toast/alert
-    //   } catch (error) {
-    //     console.error("Error deleting hafalan:", error);
-    //     // Show error toast/alert
-    //   }
-    // }
-    console.log(`Deleting hafalan with id: ${id}`); // Placeholder
-    setHafalanList(hafalanList.filter(item => item.id !== id)); // Optimistic update
+    
+    // Only fetch data if user is authenticated
+    if (isAuthenticated && user) {
+      fetchHafalanData();
+      fetchReminders();
+    } else {
+      setIsLoading(false);
+      setIsReminderLoading(false);
+    }
+  }, [isAuthenticated, user]);
+    const fetchHafalanData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Use the proper API endpoint with user_id
+      const response = await api.get(`/v1/users/${user.id}/hafalan`);
+      setHafalanList(response.data);    } catch (err) {
+      console.error("Error fetching hafalan list:", err);
+      setError("Gagal mengambil data hafalan. Silakan coba lagi nanti.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+    const fetchReminders = async () => {
+    setIsReminderLoading(true);
+    try {
+      // Use the proper API endpoint with user_id
+      const response = await api.get(`/v1/users/${user.id}/reminders`);
+      // Filter for upcoming reminders that are not completed
+      const upcomingOnes = response.data
+        .filter(reminder => !reminder.is_completed)
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+        .slice(0, 3); // Get the first 3
+      
+      setUpcomingReminders(upcomingOnes);    } catch (err) {
+      console.error("Error fetching reminders:", err);
+      // We don't set the main error state here since this is a secondary feature
+    } finally {
+      setIsReminderLoading(false);
+    }
+  };
+  const handleDelete = async (id) => {
+    if (window.confirm("Yakin ingin menghapus hafalan ini?")) {      try {
+        await api.delete(`/v1/hafalan/${id}`);
+        // Update local state optimistically
+        setHafalanList(hafalanList.filter(item => item.id !== id));
+        alert("Hafalan berhasil dihapus");
+      } catch (error) {
+        console.error("Error deleting hafalan:", error);
+        alert("Gagal menghapus hafalan");
+      }
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="bg-bg-secondary shadow-lg rounded-2xl p-6 text-center border border-border-color">
+          <p className="text-text-secondary">
+            Silakan <Link to="/login" className="text-accent-primary font-semibold">login</Link> terlebih dahulu untuk melihat dashboard Anda.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4">
@@ -63,13 +96,17 @@ const Dashboard = () => {
         <div className="lg:col-span-1 space-y-6">
           <section className="bg-bg-secondary shadow-lg rounded-2xl p-6 border border-border-color">
             <h2 className="text-2xl font-semibold text-text-primary mb-4">Pengingat Muraja&apos;ah</h2>
-            {upcomingReminders.length > 0 ? (
+            {isReminderLoading ? (
+              <div className="flex justify-center p-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary"></div>
+              </div>
+            ) : upcomingReminders.length > 0 ? (
               <ul className="space-y-3">
                 {upcomingReminders.map(reminder => (
                   <li key={reminder.id} className="p-3 bg-accent-primary/10 rounded-lg shadow-sm">
                     <p className="font-semibold text-accent-primary-dark">{reminder.surat} : {reminder.ayat}</p>
                     <p className="text-sm text-text-secondary">
-                      Jadwal: {new Date(reminder.tanggal).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      Jadwal: {new Date(reminder.due_date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                   </li>
                 ))}
@@ -106,24 +143,53 @@ const Dashboard = () => {
             </Link>
           </div>
 
-          {hafalanList.length === 0 ? (
+          {isLoading ? (
+            <div className="bg-bg-secondary shadow-lg rounded-2xl p-6 text-center border border-border-color">
+              <div className="flex justify-center p-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary"></div>
+              </div>
+              <p className="text-text-secondary">Memuat data hafalan...</p>
+            </div>
+          ) : error ? (
+            <div className="bg-red-100 shadow-lg rounded-2xl p-6 text-center border border-red-300">
+              <p className="text-red-600">{error}</p>
+              <button 
+                onClick={fetchHafalanData} 
+                className="mt-4 bg-accent-primary hover:bg-accent-primary-dark text-white px-4 py-2 rounded-lg"
+              >
+                Coba Lagi
+              </button>
+            </div>
+          ) : hafalanList.length === 0 ? (
             <div className="bg-bg-secondary shadow-lg rounded-2xl p-6 text-center border border-border-color">
                 <p className="text-text-secondary">Belum ada data hafalan.</p>
+                <Link 
+                  to="/hafalan/new" 
+                  className="mt-4 inline-block text-sm text-accent-primary hover:text-accent-primary-dark font-semibold transition-colors duration-150"
+                >
+                  Tambahkan hafalan pertama Anda &rarr;
+                </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {hafalanList.map((item) => (
                 <div key={item.id} className="bg-bg-secondary shadow-lg rounded-2xl p-6 flex flex-col justify-between border border-border-color">
                   <div>
-                    <h3 className="text-xl font-semibold text-accent-primary-dark">{item.surat} : {item.ayat}</h3>
+                    <h3 className="text-xl font-semibold text-accent-primary-dark">{item.surah_name} : {item.ayah_range}</h3>
                     <p className={`capitalize mt-1 px-3 py-1 inline-block text-sm rounded-full font-medium ${
-                      item.status === 'dihafal' ? 'bg-accent-primary/20 text-accent-primary-dark' :
-                      item.status === 'dilupa' ? 'bg-gray-400/30 text-gray-700' : 
+                      item.status === 'selesai' ? 'bg-green-100 text-green-800' :
+                      item.status === 'sedang' ? 'bg-accent-primary/20 text-accent-primary-dark' :
+                      item.status === 'belum' ? 'bg-gray-200 text-gray-700' : 
                       'bg-gray-300/40 text-gray-600' 
                     }`}>
                       {item.status.replace('_', ' ')}
                     </p>
                     <p className="text-text-secondary my-3">{item.catatan || 'Tidak ada catatan.'}</p>
+                    {item.last_reviewed_at && (
+                      <p className="text-xs text-gray-500">
+                        Terakhir diulas: {new Date(item.last_reviewed_at).toLocaleDateString('id-ID')}
+                      </p>
+                    )}
                   </div>
                   <div className="mt-4 flex justify-end space-x-3">
                     <Link

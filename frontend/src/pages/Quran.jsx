@@ -1,70 +1,74 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios'; // For alquran.cloud API
-import QuranCard from '../components/QuranCard';
+import { useNavigate } from 'react-router-dom';
+import { Snackbar, Alert, CircularProgress } from '@mui/material';
+import quranService from '../services/quranService';
 
 const Quran = () => {
+  const navigate = useNavigate();
   const [surahs, setSurahs] = useState([]);
   const [selectedSurah, setSelectedSurah] = useState(null);
   const [verses, setVerses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
 
   // Fetch list of surahs
   useEffect(() => {
-    setLoading(true);
-    axios.get('https://api.alquran.cloud/v1/surah')
-      .then(response => {
-        setSurahs(response.data.data);
+    const fetchSurahs = async () => {
+      setLoading(true);
+      try {
+        const result = await quranService.getAllSurahs();
+        setSurahs(result.data);
         setLoading(false);
-      })
-      .catch(error => {
+      } catch (error) {
         console.error("Error fetching surahs:", error);
         setLoading(false);
-        // Show error toast/alert
-      });
+        showNotification(`Error fetching surahs: ${error.message}`, 'error');
+      }
+    };
+
+    fetchSurahs();
   }, []);
 
-  const handleSurahChange = (surahNumber) => {
+  const handleSurahChange = async (surahNumber) => {
     if (!surahNumber) {
       setSelectedSurah(null);
       setVerses([]);
       return;
     }
+    
     setSelectedSurah(surahNumber);
     setLoading(true);
-    // Fetch verses for selected surah with translation (e.g., en.sahih)
-    axios.get(`https://api.alquran.cloud/v1/surah/${surahNumber}/editions/quran-uthmani,en.sahih,id.indonesian`)
-      .then(response => {
-        // The API returns multiple editions, we need to combine them.
-        // Assuming quran-uthmani is at index 0, en.sahih at 1, id.indonesian at 2
-        const arabicVerses = response.data.data[0].ayahs;
-        const englishTranslation = response.data.data[1].ayahs;
-        const indonesianTranslation = response.data.data[2].ayahs;
-
-        const combinedVerses = arabicVerses.map((ayah, index) => ({
-          numberInSurah: ayah.numberInSurah,
-          text: ayah.text, // Arabic text
-          translation: {
-            en: englishTranslation[index].text,
-            id: indonesianTranslation[index].text,
-            latin: ayah.text // Placeholder for actual transliteration if available or generated
-          }
-        }));
-        setVerses(combinedVerses);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error("Error fetching verses:", error);
-        setLoading(false);
-        // Show error toast/alert
-      });
+    
+    try {
+      const result = await quranService.getSurahWithAyahs(surahNumber);
+      setVerses(result.ayahs);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching verses:", error);
+      setLoading(false);
+      showNotification(`Error fetching verses: ${error.message}`, 'error');
+    }
   };
 
   const handleAddToHafalan = (verse) => {
-    // This would typically navigate to HafalanForm with pre-filled data
-    // or open a modal to add to hafalan.
-    console.log("Add to hafalan:", selectedSurah, verse);
-    alert(`Tambahkan ke hafalan: Surah ${selectedSurah}, Ayat ${verse.numberInSurah}`);
-    // navigate(`/hafalan/new?surah=${selectedSurah}&ayat=${verse.numberInSurah}`);
+    // Navigate to hafalan form with pre-filled data
+    navigate(`/hafalan/new?surah=${selectedSurah}&ayah=${verse.numberInSurah}`);
+  };
+  
+  const showNotification = (message, severity = 'info') => {
+    setNotification({
+      open: true,
+      message,
+      severity
+    });
+  };
+
+  const handleCloseNotification = () => {
+    setNotification({...notification, open: false});
   };
 
   return (
@@ -75,6 +79,7 @@ const Quran = () => {
           onChange={(e) => handleSurahChange(e.target.value)}
           className="block w-full md:w-1/2 mx-auto p-3 border border-gray-300 bg-white rounded-2xl shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
           defaultValue=""
+          disabled={loading}
         >
           <option value="" disabled>Pilih Surat</option>
           {surahs.map(surah => (
@@ -85,7 +90,11 @@ const Quran = () => {
         </select>
       </div>
 
-      {loading && <p className="text-center text-gray-600">Memuat...</p>}
+      {loading && (
+        <div className="flex justify-center my-12">
+          <CircularProgress color="success" />
+        </div>
+      )}
 
       {selectedSurah && !loading && (
         <div className="mt-6">
@@ -95,15 +104,15 @@ const Quran = () => {
             {surahs.find(s => s.number === parseInt(selectedSurah))?.name}
             {')'}
           </h2>
+          
           <div className="space-y-4">
             {verses.map(verse => (
               <div key={verse.numberInSurah} className="bg-white shadow-lg rounded-2xl p-6">
                 <p className="text-right text-2xl font-arabic leading-relaxed mb-3" style={{ fontFamily: "'Traditional Arabic', serif" }}>
-                  {verse.text} ({verse.numberInSurah})
+                  {verse.text} <span className="text-green-600">({verse.numberInSurah})</span>
                 </p>
                 <p className="text-gray-700 mb-1">{verse.translation.id}</p>
                 <p className="text-sm text-gray-500 italic mb-3">{verse.translation.en}</p>
-                {/* <p className="text-sm text-gray-500">{verse.translation.latin}</p> */}
                 <button
                   onClick={() => handleAddToHafalan(verse)}
                   className="mt-3 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-2xl shadow focus:outline-none focus:ring-2 focus:ring-green-400"
@@ -115,6 +124,21 @@ const Quran = () => {
           </div>
         </div>
       )}
+      
+      <Snackbar 
+        open={notification.open} 
+        autoHideDuration={6000} 
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseNotification} 
+          severity={notification.severity} 
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };

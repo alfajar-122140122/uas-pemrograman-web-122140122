@@ -1,0 +1,13 @@
+pyramid==2.0.1
+pyramid_jinja2==2.10
+SQLAlchemy==1.4.46
+alembic==1.10.3
+passlib==1.7.4
+PyJWT==2.6.0
+bcrypt==4.0.1
+pyramid_debugtoolbar==4.9
+pyramid_tm==2.5
+transaction==3.0.1
+pyramid_retry==2.1.1
+waitress==2.1.2
+zope.sqlalchemy==1.6

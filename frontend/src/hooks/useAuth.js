@@ -1,12 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-// This is a simple Zustand store for authentication state.
-// You might want to expand this based on your needs.
+import { isTokenExpired } from '../utils/jwtUtils';
 
 const useAuthStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null, // Store user information here
       token: null, // Store JWT token
       isAuthenticated: false,
@@ -14,25 +12,49 @@ const useAuthStore = create(
       login: (userData, authToken) => set({ user: userData, token: authToken, isAuthenticated: true }),
       
       logout: () => {
-        localStorage.removeItem('token'); // Also clear from actual localStorage if you stored it there directly too
+        localStorage.removeItem('token'); // Clear from localStorage
         set({ user: null, token: null, isAuthenticated: false });
       },
-
-      // You can add more actions here, e.g., for checking auth status on app load
-      // checkAuth: () => {
-      //   const token = localStorage.getItem('token'); // Or from cookie
-      //   if (token) {
-      //     // Potentially verify token with backend or decode to get user info
-      //     // For now, just assume token means authenticated
-      //     // You'd fetch user details with this token in a real app
-      //     set({ token: token, isAuthenticated: true, user: { name: "User from token" } });
-      //   }
-      // }
+      
+      // Check if user is authenticated with a valid token
+      checkAuth: () => {
+        const { token, user } = get();
+        
+        // If no token or token is expired, user is not authenticated
+        if (!token || isTokenExpired(token)) {
+          // Clean up if needed
+          if (token) {
+            localStorage.removeItem('token');
+            set({ user: null, token: null, isAuthenticated: false });
+          }
+          return false;
+        }
+        
+        // Token exists and is valid
+        return true;
+      },
+      
+      // Function to initialize auth state from localStorage on app load
+      initAuth: () => {
+        const token = localStorage.getItem('token');
+        if (token && !isTokenExpired(token)) {
+          // Try to get user info from token (in a real app, you might want to 
+          // validate the token with the server or decode it to get user info)
+          try {
+            // Just checking if token is valid here
+            set({ token, isAuthenticated: true });
+            return true;
+          } catch (error) {
+            console.error('Error initializing auth:', error);
+            localStorage.removeItem('token');
+          }
+        }
+        return false;
+      }
     }),
     {
       name: 'auth-storage', // Name of the item in localStorage
-      // getStorage: () => localStorage, // (optional) by default, 'localStorage' is used
-      // partialize: (state) => ({ token: state.token, user: state.user, isAuthenticated: state.isAuthenticated }), // Persist only token and user
+      partialize: (state) => ({ token: state.token, user: state.user, isAuthenticated: state.isAuthenticated }),
     }
   )
 );

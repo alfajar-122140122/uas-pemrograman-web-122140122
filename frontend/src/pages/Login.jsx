@@ -1,41 +1,63 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import api from '../services/api';
-// import useStore from '../store/useStore'; // Assuming zustand store for auth
+import api from '../services/api';
+import useAuthStore from '../hooks/useAuth';
 
 const Login = () => {
   const navigate = useNavigate();
-  // const loginUser = useStore(state => state.login); // Zustand action
+  const { login } = useAuthStore();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isRegister, setIsRegister] = useState(false); // Toggle between login and register
-  const [name, setName] = useState(''); // For registration
+  const [username, setUsername] = useState(''); // For registration
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
+
     try {
-      if (isRegister) {
-        // await api.post('/auth/register', { name, email, password });
-        console.log("Registering user:", { name, email, password }); // Placeholder
-        // Show success message, maybe auto-login or redirect to login
-        alert('Registrasi berhasil! Silakan login.');
-        setIsRegister(false); // Switch to login form
+      let response;
+        if (isRegister) {
+        // Registration process
+        response = await api.post('/v1/auth/register', {
+          username,
+          email,
+          password
+        });
+        
+        // If successful, store the token and user info
+        const { token, user } = response.data;
+        localStorage.setItem('token', token);
+        login(user, token);
+        
+        alert('Registrasi berhasil!');
+        navigate('/');
       } else {
-        // const response = await api.post('/auth/login', { email, password });
-        // const { token, user } = response.data;
-        // localStorage.setItem('token', token);
-        // loginUser(user); // Update zustand store
-        console.log("Logging in user:", { email, password }); // Placeholder
-        localStorage.setItem('token', 'fake-jwt-token'); // Mock token
-        // loginUser({ name: 'Nama Pengguna', email }); // Mock user
-        navigate('/'); // Redirect to dashboard
+        // Login process
+        response = await api.post('/v1/auth/login', {
+          email,
+          password
+        });
+          // Store token and user info
+        const { token, user } = response.data;
+        localStorage.setItem('token', token);
+        login(user, token);
+        
+        alert('Login berhasil!');
+        navigate('/');
       }
     } catch (err) {
       console.error("Auth error:", err);
-      setError(err.response?.data?.message || `Gagal ${isRegister ? 'registrasi' : 'login'}. Silakan coba lagi.`);
-      // Show error toast/alert
+      const errorMsg = err.response?.data?.error || 
+                      `Gagal ${isRegister ? 'registrasi' : 'login'}. ${isRegister ?                        'Email atau username mungkin sudah digunakan.' : 
+                        'Email atau password salah.'}`;
+      setError(errorMsg);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -46,23 +68,26 @@ const Login = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             {isRegister ? 'Buat Akun Baru' : 'Login ke Akun Anda'}
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            {isRegister ? 'Daftar untuk mulai menghafal Al-Quran' : 'Masuk ke akun Anda untuk melanjutkan perjalanan menghafal'}
+          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && <p className="text-sm text-red-600 bg-red-100 p-3 rounded-lg">{error}</p>}
           {isRegister && (
             <div className="rounded-2xl shadow-sm -space-y-px">
               <div>
-                <label htmlFor="name" className="sr-only">Nama Lengkap</label>
+                <label htmlFor="username" className="sr-only">Username</label>
                 <input
-                  id="name"
-                  name="name"
+                  id="username"
+                  name="username"
                   type="text"
-                  autoComplete="name"
+                  autoComplete="username"
                   required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-2xl focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                  placeholder="Nama Lengkap"
+                  placeholder="Username"
                 />
               </div>
             </div>
@@ -88,7 +113,7 @@ const Login = () => {
                 id="password"
                 name="password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete={isRegister ? "new-password" : "current-password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -101,9 +126,22 @@ const Login = () => {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-2xl text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              disabled={isLoading}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-2xl text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              {isRegister ? 'Daftar' : 'Login'}
+              {isLoading ? (
+                <>
+                  <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                    <svg className="animate-spin h-5 w-5 text-green-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </span>
+                  {isRegister ? 'Mendaftar...' : 'Login...'}
+                </>
+              ) : (
+                isRegister ? 'Daftar' : 'Login'
+              )}
             </button>
           </div>
         </form>
