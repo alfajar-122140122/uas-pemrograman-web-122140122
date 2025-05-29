@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../hooks/useAuth';
 
@@ -84,53 +84,65 @@ const LogoutIcon = () => (
   </svg>
 );
 
-const Navbar = () => {
+const Navbar = ({ toggleSidebar }) => {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const toggleMobileSidebar = () => {
-    console.log('Toggle mobile sidebar'); // Placeholder
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/quran?search=${encodeURIComponent(searchTerm.trim())}`);
+      setSearchTerm(''); // Clear search bar after navigation
+    }
   };
 
   return (
     <nav className="bg-bg-primary shadow-md fixed top-0 left-0 right-0 z-50 h-16 border-b border-border-color">
-      <div className="max-w-screen-xl mx-auto px-4 h-full">
+      {/* Removed max-w-screen-xl and mx-auto to make it full width */}
+      <div className="px-4 h-full">
         <div className="flex items-center justify-between h-full">
           {/* Left side: Logo and mobile menu toggle */}
           <div className="flex items-center">
+            {/* Mobile menu button - shown on ALL screens now, and controls sidebar visibility */}
+            <button
+              onClick={toggleSidebar} // Use the passed toggleSidebar function
+              className="mr-3 p-2 rounded-md text-text-secondary hover:text-accent-primary hover:bg-bg-hover transition-colors duration-150" // Removed lg:hidden
+              aria-label="Toggle sidebar"
+            >
+              <MenuIcon />
+            </button>
             <Link
               to="/dashboard"
               className="text-2xl font-bold text-accent-primary hover:text-accent-primary-dark transition-colors duration-150"
             >
               Hafidz<span className="text-text-primary">Tracker</span>
             </Link>
-            {/* Mobile menu button - shown on small screens */}
-            <button
-              onClick={toggleMobileSidebar}
-              className="ml-4 md:hidden text-text-secondary hover:text-accent-primary transition-colors duration-150"
-              aria-label="Toggle sidebar"
-            >
-              <MenuIcon />
-            </button>
           </div>
 
           {/* Center: Search bar - hidden on small screens */}
           <div className="hidden md:flex flex-grow max-w-xl mx-4">
-            <div className="relative w-full group">
+            <form onSubmit={handleSearchSubmit} className="relative w-full group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <SearchIcon />
               </div>
               <input
                 type="text"
-                placeholder="Cari..."
+                placeholder="Cari Surah..."
+                value={searchTerm}
+                onChange={handleSearchChange}
                 className="block w-full pl-10 pr-3 py-2.5 border border-border-color rounded-lg bg-bg-secondary text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-colors duration-150 shadow-sm group-hover:border-accent-primary"
               />
-            </div>
+            </form>
           </div>
 
           {/* Right side: Icons and User/Login */}

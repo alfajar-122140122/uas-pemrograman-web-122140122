@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Snackbar, Alert, CircularProgress, TextField, InputAdornment } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import quranService from '../services/quranService';
@@ -7,6 +7,7 @@ import SurahCard from '../components/SurahCard';
 
 const Quran = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams(); // Use useSearchParams hook
   const [surahs, setSurahs] = useState([]);
   const [selectedSurah, setSelectedSurah] = useState(null);
   const [verses, setVerses] = useState([]);
@@ -17,6 +18,14 @@ const Quran = () => {
     message: '',
     severity: 'info'
   });
+
+  // Effect to get search query from URL and set it to searchTerm state
+  useEffect(() => {
+    const query = searchParams.get('search');
+    if (query) {
+      setSearchTerm(query);
+    }
+  }, [searchParams]);
 
   // Fetch list of surahs
   useEffect(() => {
@@ -140,15 +149,7 @@ const Quran = () => {
           )}
         </div>
       )}
-
-      {/* Loading indicator for surah list or verses */}
-      {loading && (
-        <div className="flex flex-col items-center justify-center my-16">
-          <CircularProgress sx={{ color: 'var(--accent-primary)' }} />
-          <p className="mt-3 text-text-secondary">Memuat data...</p>
-        </div>
-      )}
-
+     
       {/* Selected Surah Verses - Display if a surah is selected and not loading */} 
       {selectedSurah && !loading && verses.length > 0 && (
         <div className="mt-6 bg-bg-secondary p-4 sm:p-6 rounded-2xl shadow-xl border border-border-color">
@@ -160,7 +161,7 @@ const Quran = () => {
               </span>
             </h2>
             <button 
-              onClick={() => handleSurahChange(null)} // Clear selection
+              onClick={() => handleSurahChange(null)} 
               className="bg-bg-primary hover:bg-border-color text-text-secondary font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-150 border border-border-color focus:outline-none focus:ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-secondary self-start sm:self-center mt-2 sm:mt-0"
             >
               &larr; Kembali ke Daftar Surat

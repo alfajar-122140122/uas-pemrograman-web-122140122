@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Navbar from './Navbar'; // This is the top bar
+import Footer from './Footer'; // Import the Footer component
 
 // Using Heroicons (outline style) as SVGs for better visual consistency
 const HomeIcon = () => (
@@ -67,46 +68,35 @@ const ChartBarIcon = () => (
     />
   </svg>
 );
-// const CogIcon = () => (
-//   <svg
-//     xmlns="http://www.w3.org/2000/svg"
-//     fill="none"
-//     viewBox="0 0 24 24"
-//     strokeWidth={1.5}
-//     stroke="currentColor"
-//     className="w-6 h-6"
-//   >
-//     <path
-//       strokeLinecap="round"
-//       strokeLinejoin="round"
-//       d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.646.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 1.255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.333.184-.582.496-.646.87l-.212 1.282c-.09.542-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.759 6.759 0 0 1 0-1.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.184.582-.496.645-.87l.212-1.282Z"
-//     />
-//     <path
-//       strokeLinecap="round"
-//       strokeLinejoin="round"
-//       d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-//     />
-//   </svg>
-// );
 
 const navLinks = [
   { href: '/', label: 'Dashboard', icon: HomeIcon },
   { href: '/quran', label: 'Al-Qur\'an', icon: BookOpenIcon },
   { href: '/reminder', label: 'Muraja\'ah', icon: CalendarIcon },
   { href: '/chart', label: 'Progress', icon: ChartBarIcon },
-  // Add more links like Settings if needed
-  // { href: '/settings', label: 'Settings', icon: CogIcon },
 ];
 
 const Layout = ({ children }) => {
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary text-text-primary font-sans">
-      <Navbar />
+    <div className="min-h-screen flex flex-col bg-bg-primary text-text-primary">
+      <Navbar toggleSidebar={toggleSidebar} />
       <div className="flex flex-1 pt-16">
         {/* Sidebar */}
-        <aside className="w-60 bg-bg-primary p-4 space-y-4 fixed top-16 left-0 h-[calc(100vh-4rem)] hidden lg:flex flex-col shadow-lg overflow-y-auto border-r border-border-color">
+        <aside
+          className={`
+            w-60 bg-bg-primary p-4 space-y-4 fixed top-16 left-0 h-[calc(100vh-4rem)] 
+            flex flex-col shadow-lg overflow-y-auto border-r border-border-color 
+            transform transition-transform duration-300 ease-in-out z-40
+            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          `}
+        >
           <nav className="mt-3 flex-grow">
             <ul className="space-y-1.5">
               {navLinks.map((link) => {
@@ -139,10 +129,17 @@ const Layout = ({ children }) => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 lg:ml-60 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-gray-50">
+        <main
+          className={`
+            flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-gray-50
+            transition-all duration-300 ease-in-out
+            ${isSidebarOpen ? 'lg:ml-60' : 'ml-0'}
+          `}
+        >
           {children}
         </main>
       </div>
+      <Footer />
     </div>
   );
 };

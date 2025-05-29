@@ -107,15 +107,17 @@ const Dashboard = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Pengingat Muraja'ah Section - Now takes full width on small screens, and 1/3 on large screens */}
-        <div className="lg:col-span-1 space-y-6">
-          <section className="bg-bg-secondary shadow-lg rounded-2xl p-6 border border-border-color h-full flex flex-col">
+        {/* Pengingat Muraja'ah Section */}
+        <div className="lg:col-span-1">
+          {/* Removed h-full from section to allow it to shrink to content height */}
+          <section className="bg-bg-secondary shadow-lg rounded-2xl p-6 border border-border-color flex flex-col">
             <h2 className="text-2xl font-semibold text-text-primary mb-4">Pengingat Muraja&apos;ah</h2>
             {isReminderLoading ? (
               <div className="flex justify-center p-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary"></div>
               </div>
             ) : upcomingReminders.length > 0 ? (
+              // Removed flex-grow from ul
               <ul className="space-y-3">
                 {upcomingReminders.map(reminder => (
                   <li key={reminder.id} className="p-3 bg-green-100 rounded-lg shadow-sm">
@@ -129,16 +131,17 @@ const Dashboard = () => {
             ) : (
               <p className="text-text-secondary">Tidak ada pengingat muraja&apos;ah dalam waktu dekat.</p>
             )}
+            {/* mt-auto will now push the link to the bottom of the content, pt-4 provides spacing */}
             <Link to="/reminder" className="mt-auto pt-4 inline-block text-sm text-accent-primary hover:text-accent-primary-dark font-semibold transition-colors duration-150 self-start">
               Lihat Semua Jadwal &rarr;
             </Link>
           </section>
         </div>
 
-        {/* Daftar Hafalan Saya Section - Takes full width on small screens, and 2/3 on large screens */}
+        {/* Daftar Hafalan Saya Section */}
         <div className="lg:col-span-2">
           <section className="bg-bg-secondary shadow-lg rounded-2xl p-6 border border-border-color h-full flex flex-col">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
               <h2 className="text-2xl font-semibold text-text-primary">Daftar Hafalan Saya</h2>
               <Link
                 to="/hafalan/new"
@@ -180,7 +183,7 @@ const Dashboard = () => {
                     <div>
                       <h3 className="text-xl font-semibold text-accent-primary-dark">{item.surah_name} : {item.ayah_range}</h3>
                       <p className={`capitalize mt-1 px-3 py-1 inline-block text-sm rounded-full font-medium ${
-                        item.status === 'selesai' ? 'bg-green-100 text-green-800' :
+                        item.status === 'selesai' ? 'bg-green-200 text-green-800' : // Adjusted for better contrast on green-100
                         item.status === 'sedang' ? 'bg-accent-primary/20 text-accent-primary-dark' :
                         item.status === 'belum' ? 'bg-gray-200 text-gray-700' : 
                         'bg-gray-300/40 text-gray-600' 
