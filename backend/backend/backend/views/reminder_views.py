@@ -4,26 +4,17 @@ from datetime import datetime
 
 from ..models import Reminder, User # Adjust path if necessary
 
-# Helper function (consider moving to a common utils or auth module)
-def get_authenticated_user_id(request):
-    # This is a placeholder. In a real app, you'd get this from session/token.
-    # For now, let's assume it might be passed for testing or a very simple setup.
-    # Or, if you have a user object on the request (e.g. request.user after auth policy)
-    # return request.user.id 
-    # For this example, we'll require user_id in path and assume it's authorized for now.
-    # A proper implementation would involve an authentication policy.
-    return None 
-
 @view_config(route_name='user_reminders_collection', request_method='POST', renderer='json')
 def create_user_reminder_view(request):
-    user_id = request.matchdict.get('user_id')
-    # authenticated_user_id = get_authenticated_user_id(request)
-    # if authenticated_user_id != int(user_id): # Basic check
-    #     raise HTTPForbidden(json_body={'error': 'Not authorized to create reminder for this user'})
+    user_id_from_path = request.matchdict.get('user_id')
 
-    db_user = request.dbsession.query(User).filter_by(id=user_id).first()
+    # Authorization: Ensure the authenticated user is creating a reminder for themselves
+    if not request.user or str(request.user['user_id']) != user_id_from_path:
+        raise HTTPForbidden(json_body={'error': 'Not authorized to create reminder for this user'})
+
+    db_user = request.dbsession.query(User).filter_by(id=user_id_from_path).first()
     if not db_user:
-        raise HTTPNotFound(json_body={'error': f'User with id {user_id} not found'})
+        raise HTTPNotFound(json_body={'error': f'User with id {user_id_from_path} not found'})
 
     try:
         data = request.json_body
@@ -38,7 +29,7 @@ def create_user_reminder_view(request):
             raise HTTPBadRequest(json_body={'error': 'Invalid due_date format. Use ISO format (YYYY-MM-DDTHH:MM:SS).'})
 
         new_reminder = Reminder(
-            user_id=user_id,
+            user_id=user_id_from_path,
             surat=data['surat'],
             ayat=data['ayat'],
             due_date=due_date_dt,
@@ -56,18 +47,19 @@ def create_user_reminder_view(request):
 
 @view_config(route_name='user_reminders_collection', request_method='GET', renderer='json')
 def list_user_reminders_view(request):
-    user_id = request.matchdict.get('user_id')
-    # authenticated_user_id = get_authenticated_user_id(request)
-    # if authenticated_user_id != int(user_id):
-    #     raise HTTPForbidden(json_body={'error': 'Not authorized to view reminders for this user'})
+    user_id_from_path = request.matchdict.get('user_id')
 
-    db_user = request.dbsession.query(User).filter_by(id=user_id).first()
+    # Authorization: Ensure the authenticated user is listing their own reminders
+    if not request.user or str(request.user['user_id']) != user_id_from_path:
+        raise HTTPForbidden(json_body={'error': 'Not authorized to view reminders for this user'})
+
+    db_user = request.dbsession.query(User).filter_by(id=user_id_from_path).first()
     if not db_user:
-        raise HTTPNotFound(json_body={'error': f'User with id {user_id} not found'})
+        raise HTTPNotFound(json_body={'error': f'User with id {user_id_from_path} not found'})
 
     # Optional filtering: ?completed=true or ?completed=false
     completed_filter_str = request.params.get('completed')
-    query = request.dbsession.query(Reminder).filter_by(user_id=user_id)
+    query = request.dbsession.query(Reminder).filter_by(user_id=user_id_from_path)
     if completed_filter_str:
         if completed_filter_str.lower() == 'true':
             query = query.filter_by(is_completed=True)
@@ -84,9 +76,10 @@ def get_reminder_view(request):
     if not reminder:
         raise HTTPNotFound(json_body={'error': f'Reminder with id {reminder_id} not found'})
 
-    # authenticated_user_id = get_authenticated_user_id(request)
-    # if authenticated_user_id != reminder.user_id: # Basic check
-    #     raise HTTPForbidden(json_body={'error': 'Not authorized to view this reminder'})
+    # Authorization: Ensure the authenticated user owns this reminder
+    if not request.user or reminder.user_id != request.user['user_id']:
+        raise HTTPForbidden(json_body={'error': 'Not authorized to view this reminder'})
+    
     return reminder.to_dict()
 
 @view_config(route_name='reminder_detail', request_method='PUT', renderer='json')
@@ -96,9 +89,9 @@ def update_reminder_view(request):
     if not reminder:
         raise HTTPNotFound(json_body={'error': f'Reminder with id {reminder_id} not found'})
 
-    # authenticated_user_id = get_authenticated_user_id(request)
-    # if authenticated_user_id != reminder.user_id: # Basic check
-    #     raise HTTPForbidden(json_body={'error': 'Not authorized to update this reminder'})
+    # Authorization: Ensure the authenticated user owns this reminder
+    if not request.user or reminder.user_id != request.user['user_id']:
+        raise HTTPForbidden(json_body={'error': 'Not authorized to update this reminder'})
 
     try:
         data = request.json_body
@@ -130,9 +123,9 @@ def delete_reminder_view(request):
     if not reminder:
         raise HTTPNotFound(json_body={'error': f'Reminder with id {reminder_id} not found'})
 
-    # authenticated_user_id = get_authenticated_user_id(request)
-    # if authenticated_user_id != reminder.user_id: # Basic check
-    #     raise HTTPForbidden(json_body={'error': 'Not authorized to delete this reminder'})
+    # Authorization: Ensure the authenticated user owns this reminder
+    if not request.user or reminder.user_id != request.user['user_id']:
+        raise HTTPForbidden(json_body={'error': 'Not authorized to delete this reminder'})
 
     request.dbsession.delete(reminder)
     request.dbsession.flush()

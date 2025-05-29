@@ -33,23 +33,58 @@ const Chart = () => {
       setError("Silakan login untuk melihat progress hafalan.");
       setChartData([]);
       setSummaryStats({ totalAyahs: 0, totalSurahs: 0 });
+      console.log('[Chart.jsx] User not authenticated or not available');
       return;
     }
+    console.log('[Chart.jsx] User authenticated:', user);
+    console.log('[Chart.jsx] Current filter:', filter);
 
     const fetchAndProcessHafalan = async () => {
       setIsLoading(true);
       setError(null);
       try {
+        console.log(`[Chart.jsx] Fetching hafalan for user ID: ${user.id}`);
         const response = await api.get(`/v1/users/${user.id}/hafalan`);
+        console.log('[Chart.jsx] Raw API response:', response);
         const hafalanItems = response.data;
+        console.log('[Chart.jsx] Hafalan items from API:', hafalanItems);
+        // Added log to inspect last_reviewed_at
+        console.log('[Chart.jsx] Hafalan items from API (checking last_reviewed_at):', hafalanItems.map(item => ({ id: item.id, status: item.status, last_reviewed_at: item.last_reviewed_at })));
+
+        if (!Array.isArray(hafalanItems)) {
+          console.error('[Chart.jsx] hafalanItems is not an array:', hafalanItems);
+          setError("Data hafalan yang diterima tidak valid.");
+          setChartData([]);
+          setSummaryStats({ totalAyahs: 0, totalSurahs: 0 });
+          setIsLoading(false);
+          return;
+        }
 
         const completedHafalan = hafalanItems.filter(
-          item => item.status === 'selesai' && item.last_reviewed_at
-        ).map(item => ({
-          ...item,
-          date: parseISO(item.last_reviewed_at),
-          ayahCount: calculateAyahCount(item.ayah_range)
-        })).sort((a, b) => a.date - b.date); // Sort by date for cumulative calculation
+          item => {
+            const isSelesai = item.status === 'selesai';
+            const hasLastReviewed = !!item.last_reviewed_at;
+            // console.log(`[Chart.jsx] Filtering item ID ${item.id}: status=${item.status}, last_reviewed_at=${item.last_reviewed_at}, isSelesai=${isSelesai}, hasLastReviewed=${hasLastReviewed}`);
+            return isSelesai && hasLastReviewed;
+          }
+        ).map(item => {
+          let parsedDate;
+          try {
+            parsedDate = parseISO(item.last_reviewed_at);
+          } catch (e) {
+            console.error(`[Chart.jsx] Error parsing date for item ID ${item.id}: ${item.last_reviewed_at}`, e);
+            return null; // Skip this item if date is invalid
+          }
+          const ayahs = calculateAyahCount(item.ayah_range);
+          // console.log(`[Chart.jsx] Mapping item ID ${item.id}: date=${parsedDate}, ayahCount=${ayahs}`);
+          return {
+            ...item,
+            date: parsedDate,
+            ayahCount: ayahs
+          };
+        }).filter(item => item !== null) // Remove items with parsing errors
+        .sort((a, b) => a.date - b.date); // Sort by date for cumulative calculation
+        console.log('[Chart.jsx] Filtered and mapped completedHafalan:', completedHafalan);
 
         let processedData = [];
         let cumulativeAyahs = 0;
@@ -125,14 +160,16 @@ const Chart = () => {
            });
         }
         
+        console.log('[Chart.jsx] Processed chart data before setting state:', processedData);
         setChartData(processedData);
 
         const totalAyahs = completedHafalan.reduce((sum, item) => sum + item.ayahCount, 0);
         const totalSurahs = new Set(completedHafalan.map(item => item.surah_name)).size;
+        console.log('[Chart.jsx] Summary stats: totalAyahs=', totalAyahs, 'totalSurahs=', totalSurahs);
         setSummaryStats({ totalAyahs, totalSurahs });
 
       } catch (err) {
-        console.error("Error fetching or processing hafalan data:", err);
+        console.error("[Chart.jsx] Error fetching or processing hafalan data:", err);
         setError("Gagal memuat data progress. Silakan coba lagi.");
         setChartData([]);
         setSummaryStats({ totalAyahs: 0, totalSurahs: 0 });

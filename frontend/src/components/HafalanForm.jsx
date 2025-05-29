@@ -111,17 +111,40 @@ const HafalanForm = () => {
     }
     
     setLoading(true);
-      try {      if (isEditMode) {
-        await api.put(`/v1/hafalan/${id}`, formData);
+
+    // Prepare data to be sent
+    let dataToSend = { ...formData };
+
+    // If status is 'selesai' and last_reviewed_at is not set (or was not set previously for this save action),
+    // set it to the current date.
+    // This ensures that if a user marks an item as 'selesai', it gets a review date.
+    if (dataToSend.status === 'selesai' && !dataToSend.last_reviewed_at) {
+      dataToSend.last_reviewed_at = new Date().toISOString();
+    }
+
+    // If status is NOT 'selesai', we might want to clear last_reviewed_at
+    // if the backend doesn't handle this. For now, we'll let the backend logic
+    // (as implemented previously) handle keeping or clearing it.
+    // If you want frontend to explicitly clear it:
+    // if (dataToSend.status !== 'selesai') {
+    //   dataToSend.last_reviewed_at = null;
+    // }
+
+      try {
+      if (isEditMode) {
+        // For PUT requests, send the potentially updated dataToSend
+        await api.put(`/v1/hafalan/${id}`, dataToSend);
         showNotification('Hafalan berhasil diperbarui!', 'success');
       } else {
-        await api.post(`/v1/users/${user.id}/hafalan`, formData);
+        // For POST requests, send the potentially updated dataToSend
+        await api.post(`/v1/users/${user.id}/hafalan`, dataToSend);
         showNotification('Hafalan berhasil dibuat!', 'success');
       }
       
       // Navigate after a short delay to show the notification
       setTimeout(() => navigate('/'), 1500);
-    } catch (error) {      console.error("Error submitting hafalan:", error);
+    } catch (error) {
+      console.error("Error submitting hafalan:", error);
       const errorMsg = error.response?.data?.error || error.message;
       showNotification(`Error: ${errorMsg}`, 'error');
     } finally {

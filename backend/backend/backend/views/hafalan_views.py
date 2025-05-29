@@ -78,9 +78,11 @@ def update_hafalan_view(request):
     if not hafalan:
         raise HTTPNotFound(json_body={'error': 'Hafalan not found'})
 
-    # Di aplikasi nyata, tambahkan cek otorisasi di sini (misal, hanya user pemilik atau admin)
-    # if authenticated_user_id != hafalan.user_id and not is_admin(authenticated_user_id):
-    #     raise HTTPForbidden(json_body={'error': 'Not authorized to update this hafalan'})
+    # Authorization check (ensure user owns this hafalan or is admin)
+    # This relies on the AuthMiddleware having populated request.user
+    if not request.user or ('user_id' in request.user and hafalan.user_id != request.user['user_id']):
+        # Add admin check here if you have roles, e.g. and not request.user.is_admin()
+        raise HTTPForbidden(json_body={'error': 'Not authorized to update this hafalan'})
         
     try:
         data = request.json_body
@@ -88,22 +90,40 @@ def update_hafalan_view(request):
             hafalan.surah_name = data['surah_name']
         if 'ayah_range' in data:
             hafalan.ayah_range = data['ayah_range']
+
         if 'status' in data:
             try:
-                hafalan.status = HafalanStatusEnum(data['status'])
+                new_status = HafalanStatusEnum(data['status'])
+                # If status is changing to 'selesai' and was not 'selesai' before
+                if new_status == HafalanStatusEnum.selesai and hafalan.status != HafalanStatusEnum.selesai:
+                    # If last_reviewed_at is not provided in payload or is null, set it to now
+                    if not data.get('last_reviewed_at'):
+                        from datetime import datetime, timezone
+                        hafalan.last_reviewed_at = datetime.now(timezone.utc)
+                hafalan.status = new_status
             except ValueError:
                 raise HTTPBadRequest(json_body={'error': f'Invalid status value: {data["status"]}. Valid values are: {", ".join([s.value for s in HafalanStatusEnum])}'})
+        
         if 'catatan' in data:
             hafalan.catatan = data['catatan']
-        if 'last_reviewed_at' in data: # Anda mungkin ingin ini di-set secara otomatis atau terpisah
+        
+        # Allow manual update of last_reviewed_at if provided
+        if 'last_reviewed_at' in data and data['last_reviewed_at']:
             from datetime import datetime
             try:
-                hafalan.last_reviewed_at = datetime.fromisoformat(data['last_reviewed_at'])
+                # Ensure it's parsed correctly, handling potential 'Z' for UTC
+                dt_str = data['last_reviewed_at']
+                if dt_str.endswith('Z'):
+                    dt_str = dt_str[:-1] + '+00:00'
+                hafalan.last_reviewed_at = datetime.fromisoformat(dt_str)
             except (ValueError, TypeError):
-                 hafalan.last_reviewed_at = None # Atau handle error
+                 # Keep existing or set to None if parsing fails and it was intended to be cleared
+                 hafalan.last_reviewed_at = hafalan.last_reviewed_at if hafalan.last_reviewed_at else None
+        elif 'last_reviewed_at' in data and data['last_reviewed_at'] is None: # Allow explicitly setting to null
+            hafalan.last_reviewed_at = None
+
         if 'ayah_id' in data:
             hafalan.ayah_id = data.get('ayah_id')
-
 
         request.dbsession.flush()
         return hafalan.to_dict()
@@ -121,9 +141,10 @@ def delete_hafalan_view(request):
     if not hafalan:
         raise HTTPNotFound(json_body={'error': 'Hafalan not found'})
 
-    # Di aplikasi nyata, tambahkan cek otorisasi di sini
-    # if authenticated_user_id != hafalan.user_id and not is_admin(authenticated_user_id):
-    #     raise HTTPForbidden(json_body={'error': 'Not authorized to delete this hafalan'})
+    # Authorization check
+    if not request.user or ('user_id' in request.user and hafalan.user_id != request.user['user_id']):
+        # Add admin check here
+        raise HTTPForbidden(json_body={'error': 'Not authorized to delete this hafalan'})
 
     request.dbsession.delete(hafalan)
     request.dbsession.flush()

@@ -80,7 +80,7 @@ const Reminder = () => {
         due_date: formattedDate,
         is_completed: false
       };
-        const response = await api.post(`/v1/users/${user.id}/reminders`, newReminder);
+      const response = await api.post(`/v1/users/${user.id}/reminders`, newReminder);
       
       setSchedules([...schedules, response.data]);
       alert('Pengingat muraja\'ah berhasil dibuat!');
@@ -112,6 +112,7 @@ const Reminder = () => {
   };  const handleDelete = async (id) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus pengingat ini?')) {
       try {
+        // Corrected: Removed leading /api from the URL path
         await api.delete(`/v1/reminders/${id}`);
         setSchedules(schedules.filter(s => s.id !== id));
         alert('Pengingat berhasil dihapus');
@@ -123,7 +124,8 @@ const Reminder = () => {
   };
   const handleMarkComplete = async (id, isCompleted) => {
     try {
-      await api.put(`/api/v1/reminders/${id}`, { is_completed: !isCompleted });
+      // Corrected: Removed leading /api from the URL path
+      await api.put(`/v1/reminders/${id}`, { is_completed: !isCompleted });
       setSchedules(schedules.map(s => s.id === id ? {...s, is_completed: !isCompleted} : s));
       alert(`Pengingat ditandai sebagai ${!isCompleted ? 'selesai' : 'belum selesai'}`);
     } catch (error) {
