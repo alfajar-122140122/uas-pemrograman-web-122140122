@@ -144,12 +144,16 @@ const HafalanForm = () => {
   // Redirect if not authenticated
   if (!user) {
     return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded-2xl">
+      <div className="max-w-md mx-auto mt-10 p-6 bg-bg-secondary shadow-lg rounded-2xl border border-border-color">
         <h2 className="text-xl font-semibold text-red-600 mb-4">Authentication Required</h2>
-        <p className="mb-4">You need to login to access this page.</p>
+        <p className="mb-4 text-text-secondary">You need to login to access this page.</p>
         <Button 
           variant="contained" 
-          color="primary" 
+          sx={{ 
+            backgroundColor: '#22C55E', // accent-primary
+            color: '#FFFFFF', // white
+            '&:hover': { backgroundColor: '#16A34A' } // accent-primary-dark
+          }}
           fullWidth
           onClick={() => navigate('/login')}
         >
@@ -160,110 +164,209 @@ const HafalanForm = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded-2xl">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+    <div className="max-w-2xl mx-auto mt-8 mb-8 p-6 sm:p-8 bg-bg-secondary shadow-xl rounded-2xl border border-border-color">
+      <h2 className="text-3xl font-semibold text-text-primary mb-8 text-center">
         {isEditMode ? 'Edit Hafalan' : 'Tambah Hafalan Baru'}
       </h2>
 
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <CircularProgress color="success" />
+      {loading && !surahs.length && !isEditMode ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <CircularProgress sx={{ color: '#22C55E' /* accent-primary */}} />
+          <p className="mt-3 text-text-secondary">Memuat data surah...</p>
+        </div>
+      ) : loading && isEditMode ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <CircularProgress sx={{ color: '#22C55E' /* accent-primary */}} />
+          <p className="mt-3 text-text-secondary">Memuat data hafalan...</p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <FormControl fullWidth>
-            <InputLabel id="surah-label">Surah</InputLabel>
-            <Select
-              labelId="surah-label"
-              name="surah_name"
-              value={formData.surah_name}
-              onChange={handleChange}
-              required
-              disabled={loading}
-            >
-              {surahs.map(surah => (
-                <MenuItem key={surah.number} value={surah.englishName}>
-                  {surah.number}. {surah.englishName} ({surah.name})
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="surah-select" className="block text-sm font-medium text-text-primary mb-1">Surah</label>
+            <FormControl fullWidth variant="outlined">
+              <Select
+                id="surah-select"
+                name="surah_name"
+                value={formData.surah_name}
+                onChange={handleChange}
+                required
+                disabled={loading || !surahs.length}
+                displayEmpty
+                sx={{
+                  backgroundColor: '#FFFFFF', // bg-primary
+                  color: formData.surah_name ? '#1F2937' : '#6B7280', // text-primary or placeholder
+                  borderRadius: '0.375rem',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E5E7EB' /* border-color */ },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#22C55E' /* accent-primary */ },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#22C55E', boxShadow: '0 0 0 1px #22C55E' },
+                  '& .MuiSelect-icon': { color: '#6B7280' /* gray-500 */},
+                  '.MuiSelect-select': { padding: '10px 14px' }
+                }}
+              >
+                <MenuItem value="" disabled sx={{ color: '#6B7280' }}>
+                  Pilih Surat
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                {surahs.map(surah => (
+                  <MenuItem key={surah.number} value={surah.englishName} sx={{color: '#1F2937' /* text-primary */}}>
+                    {surah.number}. {surah.englishName} ({surah.name})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </div>
 
-          <TextField
-            fullWidth
-            label="Range Ayat"
-            name="ayah_range"
-            placeholder="e.g., 1-7 or just 5"
-            value={formData.ayah_range}
-            onChange={handleChange}
-            required
-            disabled={loading}
-            helperText="Nomor ayat atau rentang (mis.: 1-7)"
-          />
-
-          <FormControl fullWidth>
-            <InputLabel id="status-label">Status</InputLabel>
-            <Select
-              labelId="status-label"
-              name="status"
-              value={formData.status}
+          <div>
+            <label htmlFor="ayah-range-input" className="block text-sm font-medium text-text-primary mb-1">Range Ayat</label>
+            <TextField
+              id="ayah-range-input"
+              fullWidth
+              variant="outlined"
+              name="ayah_range"
+              placeholder="Masukkan nomor ayat atau rentang"
+              value={formData.ayah_range}
               onChange={handleChange}
               required
               disabled={loading}
-            >
-              <MenuItem value="belum">Belum Dihafal</MenuItem>
-              <MenuItem value="sedang">Sedang Dihafal</MenuItem>
-              <MenuItem value="selesai">Selesai Dihafal</MenuItem>
-            </Select>
-          </FormControl>
+              helperText="Nomor ayat atau rentang (misalnya: 1-7 atau cukup tulis 5)"
+              InputLabelProps={{ style: { display: 'none' } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '0.375rem',
+                  backgroundColor: '#FFFFFF',
+                  '& fieldset': { borderColor: '#E5E7EB' },
+                  '&:hover fieldset': { borderColor: '#22C55E' },
+                  '&.Mui-focused fieldset': { borderColor: '#22C55E', boxShadow: '0 0 0 1px #22C55E' },
+                  '& input': { 
+                    padding: '10px 14px', 
+                    color: '#1F2937',
+                    '&::placeholder': { color: '#6B7280', opacity: 1 }
+                  }
+                },
+                '.MuiFormHelperText-root': { color: '#6B7280', marginLeft: 0 }
+              }}
+            />
+          </div>
 
-          <TextField
-            fullWidth
-            label="Catatan"
-            name="catatan"
-            multiline
-            rows={3}
-            value={formData.catatan}
-            onChange={handleChange}
-            disabled={loading}
-            placeholder="Tambahkan catatan jika diperlukan"
-          />
+          <div>
+            <label htmlFor="status-select" className="block text-sm font-medium text-text-primary mb-1">Status</label>
+            <FormControl fullWidth variant="outlined">
+              <Select
+                id="status-select"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                sx={{
+                  backgroundColor: '#FFFFFF',
+                  color: '#1F2937',
+                  borderRadius: '0.375rem',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E5E7EB' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#22C55E' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#22C55E', boxShadow: '0 0 0 1px #22C55E' },
+                  '& .MuiSelect-icon': { color: '#6B7280'},
+                  '.MuiSelect-select': { padding: '10px 14px' }
+                }}
+              >
+                <MenuItem value="belum" sx={{color: '#1F2937'}}>Belum Dihafal</MenuItem>
+                <MenuItem value="sedang" sx={{color: '#1F2937'}}>Sedang Dihafal</MenuItem>
+                <MenuItem value="selesai" sx={{color: '#1F2937'}}>Selesai Dihafal</MenuItem>
+              </Select>
+            </FormControl>
+          </div>
 
-          <div className="flex space-x-4 pt-2">
+          <div>
+            <label htmlFor="catatan-input" className="block text-sm font-medium text-text-primary mb-1">Catatan</label>
+            <TextField
+              id="catatan-input"
+              fullWidth
+              variant="outlined"
+              name="catatan"
+              multiline
+              rows={4}
+              value={formData.catatan}
+              onChange={handleChange}
+              disabled={loading}
+              placeholder="Tambahkan catatan jika diperlukan (opsional)"
+              InputLabelProps={{ style: { display: 'none' } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '0.375rem',
+                  backgroundColor: '#FFFFFF',
+                  '& fieldset': { borderColor: '#E5E7EB' },
+                  '&:hover fieldset': { borderColor: '#22C55E' },
+                  '&.Mui-focused fieldset': { borderColor: '#22C55E', boxShadow: '0 0 0 1px #22C55E' },
+                  '& textarea': { 
+                    padding: '10px 14px', 
+                    color: '#1F2937',
+                    '&::placeholder': { color: '#6B7280', opacity: 1 }
+                  }
+                }
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 pt-4">
             <Button
               type="button"
               variant="outlined"
-              color="secondary"
               fullWidth
               onClick={() => navigate('/')}
               disabled={loading}
+              sx={{
+                color: '#4B5563', // text-secondary
+                borderColor: '#E5E7EB', // border-color
+                textTransform: 'none',
+                padding: '10px 0',
+                fontSize: '0.95rem',
+                fontWeight: '600',
+                borderRadius: '0.375rem',
+                '&:hover': {
+                  borderColor: '#4B5563', 
+                  backgroundColor: 'rgba(75, 85, 99, 0.04)'
+                }
+              }}
             >
               Batal
             </Button>
-            <Button 
-              type="submit" 
-              variant="contained" 
-              color="primary" 
+            <Button
+              type="submit"
+              variant="contained"
               fullWidth
               disabled={loading}
+              sx={{
+                backgroundColor: '#22C55E', // accent-primary
+                color: '#FFFFFF', // white
+                textTransform: 'none',
+                padding: '10px 0',
+                fontSize: '0.95rem',
+                fontWeight: '600',
+                borderRadius: '0.375rem',
+                '&:hover': {
+                  backgroundColor: '#16A34A' // accent-primary-dark
+                },
+                '&.Mui-disabled': { 
+                  backgroundColor: 'rgba(0, 0, 0, 0.12)',
+                  color: 'rgba(0, 0, 0, 0.26)',
+                }
+              }}
             >
-              {loading ? 'Menyimpan...' : (isEditMode ? 'Update' : 'Simpan')}
+              {loading ? (
+                <CircularProgress size={24} sx={{ color: '#FFFFFF' }} />
+              ) : (
+                isEditMode ? 'Simpan Perubahan' : 'Simpan Hafalan'
+              )}
             </Button>
           </div>
         </form>
       )}
-      
       <Snackbar 
         open={notification.open} 
         autoHideDuration={6000} 
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={handleCloseNotification} 
-          severity={notification.severity}
-          sx={{ width: '100%' }}
-        >
+        <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
           {notification.message}
         </Alert>
       </Snackbar>

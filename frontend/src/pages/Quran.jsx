@@ -85,10 +85,10 @@ const Quran = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-text-primary mb-6 text-center">Baca Al-Qur'an</h1>
+      <h1 className="text-3xl font-bold text-text-primary mb-8 text-center">Baca Al-Qur'an</h1>
       
       {/* Search Bar */} 
-      <div className="mb-8 px-2 sm:px-0">
+      <div className="mb-8 px-2 sm:px-0 max-w-3xl mx-auto">
         <TextField 
           fullWidth
           variant="outlined"
@@ -98,24 +98,30 @@ const Quran = () => {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon />
+                <SearchIcon sx={{ color: 'var(--text-secondary)' }} />
               </InputAdornment>
             ),
             sx: {
-              borderRadius: '12px', // Rounded corners
-              backgroundColor: 'white', // White background
+              borderRadius: '12px', 
+              backgroundColor: 'var(--bg-primary)', 
+              color: 'var(--text-primary)',
+              'input::placeholder': {
+                color: 'var(--text-secondary)',
+                opacity: 1
+              }
             }
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
               '& fieldset': {
-                borderColor: 'var(--border-color)', // Use theme border color
+                borderColor: 'var(--border-color)', 
               },
               '&:hover fieldset': {
-                borderColor: 'var(--accent-primary)', // Use theme accent color on hover
+                borderColor: 'var(--accent-primary)', 
               },
               '&.Mui-focused fieldset': {
-                borderColor: 'var(--accent-primary)', // Use theme accent color when focused
+                borderColor: 'var(--accent-primary)', 
+                borderWidth: '2px',
               },
             },
           }}
@@ -124,49 +130,59 @@ const Quran = () => {
 
       {/* Surah Cards Grid - Display if no surah is selected */} 
       {!selectedSurah && !loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-          {filteredSurahs.map(surah => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 mb-8">
+          {filteredSurahs.length > 0 ? filteredSurahs.map(surah => (
             <SurahCard key={surah.number} surah={surah} onClick={handleSurahChange} />
-          ))}
+          )) : (
+            <div className="col-span-full text-center py-10 bg-bg-secondary rounded-2xl border border-border-color">
+              <p className="text-text-secondary text-lg">Tidak ada surat yang cocok dengan pencarian "{searchTerm}".</p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Loading indicator for surah list or verses */}
       {loading && (
-        <div className="flex justify-center my-12">
+        <div className="flex flex-col items-center justify-center my-16">
           <CircularProgress sx={{ color: 'var(--accent-primary)' }} />
+          <p className="mt-3 text-text-secondary">Memuat data...</p>
         </div>
       )}
 
       {/* Selected Surah Verses - Display if a surah is selected and not loading */} 
       {selectedSurah && !loading && verses.length > 0 && (
-        <div className="mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold text-accent-primary-dark">
+        <div className="mt-6 bg-bg-secondary p-4 sm:p-6 rounded-2xl shadow-xl border border-border-color">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 pb-4 border-b border-border-color">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-accent-primary-dark mb-2 sm:mb-0">
               {surahs.find(s => s.number === parseInt(selectedSurah))?.englishName}
-              {' ('}
-              {surahs.find(s => s.number === parseInt(selectedSurah))?.name}
-              {')'}
+              <span className="text-xl text-text-secondary ml-2">
+                ({surahs.find(s => s.number === parseInt(selectedSurah))?.name})
+              </span>
             </h2>
             <button 
               onClick={() => handleSurahChange(null)} // Clear selection
-              className="bg-bg-secondary hover:bg-border-color text-text-secondary font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors duration-150"
+              className="bg-bg-primary hover:bg-border-color text-text-secondary font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-150 border border-border-color focus:outline-none focus:ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-secondary self-start sm:self-center mt-2 sm:mt-0"
             >
               &larr; Kembali ke Daftar Surat
             </button>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             {verses.map(verse => (
-              <div key={verse.numberInSurah} className="bg-white shadow-lg rounded-2xl p-6 border border-border-color">
-                <p className="text-right text-3xl font-arabic leading-loose mb-4 text-text-primary" style={{ fontFamily: "'Noto Naskh Arabic', serif" }}>
-                  {verse.text} <span className="text-accent-primary-dark text-xl">({verse.numberInSurah})</span>
-                </p>
-                <p className="text-text-primary mb-2 text-base leading-relaxed">{verse.translation.id}</p>
-                <p className="text-sm text-text-secondary italic mb-4">{verse.translation.en}</p>
+              <div key={verse.numberInSurah} className="bg-bg-primary shadow-lg rounded-2xl p-5 sm:p-6 border border-border-color transition-shadow duration-200 hover:shadow-xl">
+                <div className="flex justify-between items-start mb-3">
+                  <span className="text-sm font-medium bg-accent-primary/10 text-accent-primary-dark px-3 py-1 rounded-full">
+                    Ayat {verse.numberInSurah}
+                  </span>
+                  <p className="text-right text-3xl sm:text-4xl font-arabic leading-relaxed text-text-primary" dir="rtl" style={{ fontFamily: "'Noto Naskh Arabic', serif" }}>
+                    {verse.text}
+                  </p>
+                </div>
+                <p className="text-text-primary mb-2 text-base leading-relaxed font-inter">{verse.translation.id}</p>
+                <p className="text-sm text-text-secondary italic mb-4 font-inter">{verse.translation.en}</p>
                 <button
                   onClick={() => handleAddToHafalan(verse)}
-                  className="mt-3 bg-accent-primary hover:bg-accent-primary-dark text-white font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-150 focus:outline-none focus:ring-2 ring-offset-2 ring-accent-primary"
+                  className="mt-3 bg-accent-primary hover:bg-accent-primary-dark text-white font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all duration-150 focus:outline-none focus:ring-2 ring-offset-2 ring-accent-primary ring-offset-bg-primary"
                 >
                   Tambahkan ke Hafalan
                 </button>
