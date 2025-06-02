@@ -90,6 +90,7 @@ const Layout = ({ children }) => {
       <div className="flex flex-1 pt-16">
         {/* Sidebar */}
         <aside
+          data-testid="sidebar"
           className={`
             w-60 bg-bg-primary p-4 space-y-4 fixed top-16 left-0 h-[calc(100vh-4rem)] 
             flex flex-col shadow-lg overflow-y-auto border-r border-border-color 
@@ -130,6 +131,7 @@ const Layout = ({ children }) => {
 
         {/* Main Content Area */}
         <main
+          data-testid="content-area"
           className={`
             flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto bg-gray-50
             transition-all duration-300 ease-in-out

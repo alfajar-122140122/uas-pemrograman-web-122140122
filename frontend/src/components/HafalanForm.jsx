@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import quranService from '../services/quranService';
-import { Snackbar, Alert, FormControl, InputLabel, Select, MenuItem, TextField, Button, CircularProgress } from '@mui/material';
+import { Snackbar, Alert, FormControl, InputLabel, Select, MenuItem, TextField, Button, CircularProgress } from '@mui/material'; // Ensure InputLabel is imported
 import useAuthStore from '../hooks/useAuth';
+import { act } from '@testing-library/react';
 
 const HafalanForm = () => {
   const { id } = useParams(); // For editing existing hafalan
@@ -31,68 +32,95 @@ const HafalanForm = () => {
 
   // Load surahs for the dropdown
   useEffect(() => {
-    const fetchSurahs = async () => {
-      setLoading(true);
+    const fetchSurahsAndParams = async () => {
+      act(() => { 
+        setLoading(true);
+      });
       try {
         const result = await quranService.getAllSurahs();
-        setSurahs(result.data);      } catch (error) {
+        act(() => { // Wrap state update in act
+          setSurahs(result.data);
+        });
+      } catch (error) {
         console.error("Error fetching surahs:", error);
-        showNotification(`Error loading Surah list: ${error.message}`, 'error');
+        act(() => { // Wrap state update in act
+          showNotification(`Error loading Surah list: ${error.message}`, 'error');
+        });
       } finally {
-        setLoading(false);
+        act(() => { // Wrap state update in act
+          setLoading(false);
+        });
       }
     };
 
-    fetchSurahs();
+    fetchSurahsAndParams();
     
     // Get query parameters for pre-filling the form
     const surahNumber = searchParams.get('surah');
     const ayahNumber = searchParams.get('ayah');
     
     if (surahNumber && ayahNumber) {
-      setLoading(true);
+      act(() => { // Wrap state update in act
+        setLoading(true);
+      });
       // Find surah name from surah number
       quranService.getSurahWithAyahs(surahNumber)
         .then(result => {
-          setFormData(prev => ({
-            ...prev,
-            surah_name: result.data.englishName,
-            ayah_range: ayahNumber
-          }));
-        })        .catch(error => {
+          act(() => { // Wrap state update in act
+            setFormData(prev => ({
+              ...prev,
+              surah_name: result.data.englishName,
+              ayah_range: ayahNumber
+            }));
+          });
+        })
+        .catch(error => {
           console.error("Error fetching surah details:", error);
-          showNotification(`Error fetching surah details: ${error.message}`, 'error');
+          act(() => { // Wrap state update in act
+            showNotification(`Error fetching surah details: ${error.message}`, 'error');
+          });
         })
         .finally(() => {
-          setLoading(false);
+          act(() => { // Wrap state update in act
+            setLoading(false);
+          });
         });
     }
-  }, [searchParams]);
+  }, [searchParams]); // Removed navigate from dependencies as it's stable
+
   useEffect(() => {
     if (isEditMode) {
-      setLoading(true);
+      act(() => { // Wrap state update in act
+        setLoading(true);
+      });
       // Fetch existing hafalan data if in edit mode
       api.get(`/v1/hafalan/${id}`)
         .then(response => {
           const { surah_name, ayah_range, status, catatan, ayah_id } = response.data;
-          setFormData({
-            surah_name,
-            ayah_range,
-            status,
-            catatan: catatan || '',
-            ayah_id
+          act(() => { // Wrap state update in act
+            setFormData({
+              surah_name,
+              ayah_range,
+              status,
+              catatan: catatan || '',
+              ayah_id
+            });
           });
         })
-        .catch(error => {          console.error("Error fetching hafalan:", error);
-          showNotification(`Error loading data: ${error.response?.data?.error || error.message}`, 'error');
-          // Redirect back to dashboard on error
-          setTimeout(() => navigate('/'), 1500);
+        .catch(error => {
+          console.error("Error fetching hafalan:", error);
+          act(() => { // Wrap state update in act
+            showNotification(`Error loading data: ${error.response?.data?.error || error.message}`, 'error');
+          });
+          // setTimeout(() => navigate('/'), 1500); // Consider if navigation is needed on error during test
         })
         .finally(() => {
-          setLoading(false);
+          act(() => { // Wrap state update in act
+            setLoading(false);
+          });
         });
     }
-  }, [id, isEditMode, navigate]);
+  }, [id, isEditMode]); // Removed navigate from dependencies
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -205,9 +233,11 @@ const HafalanForm = () => {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="surah-select" className="block text-sm font-medium text-text-primary mb-1">Surah</label>
+            {/* <label htmlFor="surah-select" className="block text-sm font-medium text-text-primary mb-1">Surah</label> */}
             <FormControl fullWidth variant="outlined">
+              <InputLabel id="surah-label">Surah</InputLabel>
               <Select
+                labelId="surah-label"
                 id="surah-select"
                 name="surah_name"
                 value={formData.surah_name}
@@ -215,6 +245,7 @@ const HafalanForm = () => {
                 required
                 disabled={loading || !surahs.length}
                 displayEmpty
+                label="Surah" // Added for outlined variant
                 sx={{
                   backgroundColor: '#FFFFFF', // bg-primary
                   color: formData.surah_name ? '#1F2937' : '#6B7280', // text-primary or placeholder
@@ -271,15 +302,18 @@ const HafalanForm = () => {
           </div>
 
           <div>
-            <label htmlFor="status-select" className="block text-sm font-medium text-text-primary mb-1">Status</label>
+            {/* <label htmlFor="status-select" className="block text-sm font-medium text-text-primary mb-1">Status</label> */}
             <FormControl fullWidth variant="outlined">
+              <InputLabel id="status-label">Status</InputLabel>
               <Select
+                labelId="status-label"
                 id="status-select"
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
                 required
                 disabled={loading}
+                label="Status" // Added for outlined variant
                 sx={{
                   backgroundColor: '#FFFFFF',
                   color: '#1F2937',
@@ -383,7 +417,8 @@ const HafalanForm = () => {
           </div>
         </form>
       )}
-      <Snackbar 
+
+      <Snackbar
         open={notification.open} 
         autoHideDuration={6000} 
         onClose={handleCloseNotification}

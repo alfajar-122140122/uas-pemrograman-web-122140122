@@ -11,3 +11,9 @@ transaction==3.0.1
 pyramid_retry==2.1.1
 waitress==2.1.2
 zope.sqlalchemy==1.6
+
+# Testing requirements
+pytest==8.3.5
+WebTest==3.0.0
+pytest-cov==4.1.0
+factory_boy==3.3.0

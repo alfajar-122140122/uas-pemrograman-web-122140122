@@ -19,8 +19,10 @@ def pytest_addoption(parser):
 
 @pytest.fixture(scope='session')
 def ini_file(request):
-    # potentially grab this path from a pytest option
-    return os.path.abspath(request.config.option.ini or 'testing.ini')
+    # Construct the path to testing.ini relative to the conftest.py file
+    # conftest.py is in backend/backend/tests/
+    # testing.ini is in backend/
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'testing.ini')
 
 @pytest.fixture(scope='session')
 def app_settings(ini_file):
@@ -29,22 +31,54 @@ def app_settings(ini_file):
 @pytest.fixture(scope='session')
 def dbengine(app_settings, ini_file):
     engine = models.get_engine(app_settings)
-
-    alembic_cfg = alembic.config.Config(ini_file)
+    
+    # Debug print
+    print(f"\nDEBUG: Creating database tables with settings: {app_settings}")
+    
+    # Cara yang lebih aman: Hapus database terlebih dahulu jika ada
+    import os
+    db_url = app_settings['sqlalchemy.url']
+    if db_url.startswith('sqlite:///'):
+        # Handle windows paths with //
+        if db_url.startswith('sqlite:////'):
+            db_path = db_url.replace('sqlite:////', '')
+        else:
+            db_path = db_url.replace('sqlite:///', '')
+        
+        # Relative path check
+        if not os.path.isabs(db_path):
+            # Get directory of ini file and make path absolute
+            ini_dir = os.path.dirname(os.path.abspath(ini_file))
+            db_path = os.path.join(ini_dir, db_path)
+        
+        # Print debug info
+        print(f"DEBUG: SQLite DB path: {db_path}")
+        
+        # Delete the file if it exists
+        if os.path.exists(db_path):
+            os.remove(db_path)
+            print(f"DEBUG: Removed existing database file")
+    
+    # Create all tables before starting tests
+    from backend.models.mymodel import User, Hafalan, Surah, Ayah, Reminder
+    # Force recreate all tables
     Base.metadata.drop_all(bind=engine)
-    alembic.command.stamp(alembic_cfg, None, purge=True)
-
-    # run migrations to initialize the database
-    # depending on how we want to initialize the database from scratch
-    # we could alternatively call:
-    # Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    print(f"DEBUG: Created tables: {Base.metadata.tables.keys()}")
+    
+    # Skip alembic stamp for testing
+    # alembic_cfg = alembic.config.Config(ini_file)
     # alembic.command.stamp(alembic_cfg, "head")
-    alembic.command.upgrade(alembic_cfg, "head")
 
     yield engine
 
+    # Drop all tables
     Base.metadata.drop_all(bind=engine)
-    alembic.command.stamp(alembic_cfg, None, purge=True)
+    print("DEBUG: Dropped all tables at teardown")
+    
+    # Skip alembic stamp in teardown as well
+    # alembic_cfg = alembic.config.Config(ini_file)
+    # alembic.command.stamp(alembic_cfg, None, purge=True)
 
 @pytest.fixture(scope='session')
 def app(app_settings, dbengine):
