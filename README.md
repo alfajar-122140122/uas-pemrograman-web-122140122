@@ -1,4 +1,4 @@
-# Aplikasi Hafalan Quran
+# Hafidz Tracker
 
 Ini adalah aplikasi web untuk menghafal Al-Quran (Hafalan). Aplikasi ini terdiri dari frontend berbasis React dan backend berbasis Python dengan framework Pyramid.
 
@@ -65,7 +65,7 @@ Server backend akan tersedia di http://localhost:6543
 
 Frontend akan tersedia di http://localhost:5173
 
-## Titik Akhir API
+## API Endpoint
 
 ### Autentikasi
 - `POST /api/v1/auth/register`: Mendaftarkan pengguna baru
@@ -94,7 +94,3 @@ Frontend akan tersedia di http://localhost:5173
 ## API Eksternal
 
 Aplikasi ini menggunakan [API alquran.cloud](https://alquran.cloud/api) untuk mengambil data Al-Quran.
-
-## Lisensi
-
-Proyek ini dilisensikan di bawah Lisensi MIT.
